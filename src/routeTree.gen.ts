@@ -10,7 +10,9 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as TagsRouteImport } from './routes/tags'
+import { Route as SignupRouteImport } from './routes/signup'
 import { Route as OrcamentoRouteImport } from './routes/orcamento'
+import { Route as LoginRouteImport } from './routes/login'
 import { Route as LancamentosRouteImport } from './routes/lancamentos'
 import { Route as ContasRouteImport } from './routes/contas'
 import { Route as CategoriasRouteImport } from './routes/categorias'
@@ -20,16 +22,26 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CartoesIdRouteImport } from './routes/cartoes.$id'
 import { Route as ApiSplatRouteImport } from './routes/api.$'
 import { Route as ApiRpcSplatRouteImport } from './routes/api.rpc.$'
-import { Route as ApiAuthSplatRouteImport } from './routes/api/auth/$'
+import { Route as ApiAuthSplatRouteImport } from './routes/api.auth.$'
 
 const TagsRoute = TagsRouteImport.update({
   id: '/tags',
   path: '/tags',
   getParentRoute: () => rootRouteImport,
 } as any)
+const SignupRoute = SignupRouteImport.update({
+  id: '/signup',
+  path: '/signup',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const OrcamentoRoute = OrcamentoRouteImport.update({
   id: '/orcamento',
   path: '/orcamento',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const LoginRoute = LoginRouteImport.update({
+  id: '/login',
+  path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LancamentosRoute = LancamentosRouteImport.update({
@@ -90,7 +102,9 @@ export interface FileRoutesByFullPath {
   '/categorias': typeof CategoriasRoute
   '/contas': typeof ContasRoute
   '/lancamentos': typeof LancamentosRoute
+  '/login': typeof LoginRoute
   '/orcamento': typeof OrcamentoRoute
+  '/signup': typeof SignupRoute
   '/tags': typeof TagsRoute
   '/api/$': typeof ApiSplatRoute
   '/cartoes/$id': typeof CartoesIdRoute
@@ -104,7 +118,9 @@ export interface FileRoutesByTo {
   '/categorias': typeof CategoriasRoute
   '/contas': typeof ContasRoute
   '/lancamentos': typeof LancamentosRoute
+  '/login': typeof LoginRoute
   '/orcamento': typeof OrcamentoRoute
+  '/signup': typeof SignupRoute
   '/tags': typeof TagsRoute
   '/api/$': typeof ApiSplatRoute
   '/cartoes/$id': typeof CartoesIdRoute
@@ -119,7 +135,9 @@ export interface FileRoutesById {
   '/categorias': typeof CategoriasRoute
   '/contas': typeof ContasRoute
   '/lancamentos': typeof LancamentosRoute
+  '/login': typeof LoginRoute
   '/orcamento': typeof OrcamentoRoute
+  '/signup': typeof SignupRoute
   '/tags': typeof TagsRoute
   '/api/$': typeof ApiSplatRoute
   '/cartoes/$id': typeof CartoesIdRoute
@@ -135,7 +153,9 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contas'
     | '/lancamentos'
+    | '/login'
     | '/orcamento'
+    | '/signup'
     | '/tags'
     | '/api/$'
     | '/cartoes/$id'
@@ -149,7 +169,9 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contas'
     | '/lancamentos'
+    | '/login'
     | '/orcamento'
+    | '/signup'
     | '/tags'
     | '/api/$'
     | '/cartoes/$id'
@@ -163,7 +185,9 @@ export interface FileRouteTypes {
     | '/categorias'
     | '/contas'
     | '/lancamentos'
+    | '/login'
     | '/orcamento'
+    | '/signup'
     | '/tags'
     | '/api/$'
     | '/cartoes/$id'
@@ -178,7 +202,9 @@ export interface RootRouteChildren {
   CategoriasRoute: typeof CategoriasRoute
   ContasRoute: typeof ContasRoute
   LancamentosRoute: typeof LancamentosRoute
+  LoginRoute: typeof LoginRoute
   OrcamentoRoute: typeof OrcamentoRoute
+  SignupRoute: typeof SignupRoute
   TagsRoute: typeof TagsRoute
   ApiSplatRoute: typeof ApiSplatRoute
   ApiAuthSplatRoute: typeof ApiAuthSplatRoute
@@ -194,11 +220,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof TagsRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/signup': {
+      id: '/signup'
+      path: '/signup'
+      fullPath: '/signup'
+      preLoaderRoute: typeof SignupRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/orcamento': {
       id: '/orcamento'
       path: '/orcamento'
       fullPath: '/orcamento'
       preLoaderRoute: typeof OrcamentoRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/login': {
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/lancamentos': {
@@ -292,7 +332,9 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriasRoute: CategoriasRoute,
   ContasRoute: ContasRoute,
   LancamentosRoute: LancamentosRoute,
+  LoginRoute: LoginRoute,
   OrcamentoRoute: OrcamentoRoute,
+  SignupRoute: SignupRoute,
   TagsRoute: TagsRoute,
   ApiSplatRoute: ApiSplatRoute,
   ApiAuthSplatRoute: ApiAuthSplatRoute,

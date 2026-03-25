@@ -28,6 +28,7 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ds/Table";
+import { Input } from "../components/ds";
 
 export const Route = createFileRoute("/lancamentos")({
 	component: LancamentosPage,
@@ -313,6 +314,9 @@ function LancamentosPage() {
 					>
 						<span
 							onClick={handlePrevMonth}
+							role="button"
+							tabIndex={0}
+							onKeyDown={(e) => e.key === "Enter" && handlePrevMonth()}
 							style={{ cursor: "pointer", display: "flex" }}
 						>
 							<ChevronLeft size={18} />
@@ -329,6 +333,9 @@ function LancamentosPage() {
 						</span>
 						<span
 							onClick={handleNextMonth}
+							role="button"
+							tabIndex={0}
+							onKeyDown={(e) => e.key === "Enter" && handleNextMonth()}
 							style={{ cursor: "pointer", display: "flex" }}
 						>
 							<ChevronRight size={18} />
@@ -336,7 +343,7 @@ function LancamentosPage() {
 					</button>
 					<button
 						type="button"
-						onClick={() => setShowModal(true)}
+						onClick={() => openModal()}
 						style={{
 							background: "var(--accent)",
 							color: "#FFF",
@@ -648,7 +655,8 @@ function LancamentosPage() {
 						justifyContent: "center",
 						zIndex: 1000,
 					}}
-					onClick={(e) => e.target === e.currentTarget && setShowModal(false)}
+					onKeyDown={(e) => e.key === "Escape" && closeModal()}
+					onClick={(e) => e.target === e.currentTarget && closeModal()}
 				>
 					<div
 						style={{
@@ -672,7 +680,7 @@ function LancamentosPage() {
 						>
 							<div>
 								<h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0 }}>
-									Novo lançamento
+									{editingId ? "Editar lançamento" : "Novo lançamento"}
 								</h2>
 								<p
 									style={{
@@ -685,7 +693,8 @@ function LancamentosPage() {
 								</p>
 							</div>
 							<button
-								onClick={() => setShowModal(false)}
+								type="button"
+								onClick={() => closeModal()}
 								style={{
 									background: "#1F1F23",
 									border: "1px solid #2A2A2E",
@@ -711,7 +720,8 @@ function LancamentosPage() {
 							{["despesa", "receita", "transferencia"].map((tipo) => (
 								<button
 									key={tipo}
-									onClick={() => setTipoSelecionado(tipo)}
+									type="button"
+									onClick={() => setTipoSelecionado(tipo as any)}
 									style={{
 										padding: "12px 20px",
 										background: "transparent",
@@ -896,17 +906,14 @@ function LancamentosPage() {
 										onValueChange={(value) => setCategoria(value)}
 									>
 										<Select.SelectTrigger
+											className="w-full"
 											style={{
-												width: "100%",
 												background: "#0A0A0B",
 												border: "1px solid var(--border)",
 												borderRadius: "12px",
 												height: "52px",
 												color: "#FFF",
 												fontSize: "15px",
-												outline: "none",
-												display: "flex",
-												alignItems: "center",
 											}}
 										>
 											<Select.SelectValue placeholder="Selecione..." />
@@ -976,102 +983,6 @@ function LancamentosPage() {
 									</select>
 								</div>
 							</div>
-							{/* Keep old input structure for remaining fields */}
-							<div style={{ marginBottom: "20px" }}>
-								<label
-									style={{
-										fontSize: "13px",
-										fontWeight: 500,
-										color: "var(--text-secondary)",
-										display: "block",
-										marginBottom: "8px",
-									}}
-								>
-									Descrição
-								</label>
-								<input
-									type="text"
-									placeholder="Ex.: Almoço com a equipe"
-									style={{
-										width: "100%",
-										background: "#0A0A0B",
-										border: "1px solid var(--border)",
-										borderRadius: "12px",
-										height: "52px",
-										color: "#FFF",
-										padding: "0 16px",
-										fontSize: "15px",
-										outline: "none",
-									}}
-								/>
-							</div>
-							<div
-								style={{ display: "flex", gap: "20px", marginBottom: "20px" }}
-							>
-								<div style={{ flex: 1 }}>
-									<label
-										style={{
-											fontSize: "13px",
-											fontWeight: 500,
-											color: "var(--text-secondary)",
-											display: "block",
-											marginBottom: "8px",
-										}}
-									>
-										Categoria
-									</label>
-									<select
-										style={{
-											width: "100%",
-											background: "#0A0A0B",
-											border: "1px solid var(--border)",
-											borderRadius: "12px",
-											height: "52px",
-											color: "#FFF",
-											padding: "0 16px",
-											fontSize: "15px",
-											cursor: "pointer",
-										}}
-									>
-										<option value="">Selecione...</option>
-										<option value="alimentacao">Alimentação</option>
-										<option value="moradia">Moradia</option>
-										<option value="transporte">Transporte</option>
-										<option value="saude">Saúde</option>
-										<option value="lazer">Lazer</option>
-									</select>
-								</div>
-								<div style={{ flex: 1 }}>
-									<label
-										style={{
-											fontSize: "13px",
-											fontWeight: 500,
-											color: "var(--text-secondary)",
-											display: "block",
-											marginBottom: "8px",
-										}}
-									>
-										Conta
-									</label>
-									<select
-										style={{
-											width: "100%",
-											background: "#0A0A0B",
-											border: "1px solid var(--border)",
-											borderRadius: "12px",
-											height: "52px",
-											color: "#FFF",
-											padding: "0 16px",
-											fontSize: "15px",
-											cursor: "pointer",
-										}}
-									>
-										<option value="">Selecione...</option>
-										<option value="nubank">Nubank PJ</option>
-										<option value="bb">Banco do Brasil</option>
-									</select>
-								</div>
-							</div>
 						</div>
 
 						<div
@@ -1084,141 +995,103 @@ function LancamentosPage() {
 								gap: "12px",
 							}}
 						>
-							<button
-								onClick={() => setShowModal(false)}
-								style={{
-									background: "transparent",
-									border: "1px solid var(--border)",
-									color: "var(--text-secondary)",
-									padding: "10px 20px",
-									borderRadius: "8px",
-									fontWeight: 600,
-									cursor: "pointer",
-								}}
-							>
+							<Button variant="ghost" onClick={() => closeModal()}>
 								Cancelar
-							</button>
-							<button
+							</Button>
+							<Button
 								type="button"
+								variant="primary"
 								onClick={saveLancamento}
-								style={{
-									background: "#22C55E",
-									border: "none",
-									color: "#FFF",
-									padding: "10px 20px",
-									borderRadius: "8px",
-									fontWeight: 600,
-									cursor: "pointer",
-								}}
+								style={{ background: "#22C55E", color: "#FFF" }}
 							>
 								{editingId ? "Salvar" : "Confirmar"}
-							</button>
+							</Button>
 						</div>
 					</div>
 				</div>
-			)
-}
+			)}
 
-{
-	showDeleteModal && (
-		<div
-			style={{
-				position: "fixed",
-				top: 0,
-				left: 0,
-				right: 0,
-				bottom: 0,
-				background: "rgba(0,0,0,0.7)",
-				backdropFilter: "blur(4px)",
-				display: "flex",
-				alignItems: "center",
-				justifyContent: "center",
-				zIndex: 1000,
-			}}
-			onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}
-		>
-			<div
-				style={{
-					background: "var(--bg-card)",
-					border: "1px solid var(--border)",
-					borderRadius: "20px",
-					padding: "32px",
-					maxWidth: "400px",
-					textAlign: "center",
-				}}
-			>
+			{showDeleteModal && (
 				<div
 					style={{
-						background: "rgba(239,68,68,0.1)",
-						width: "64px",
-						height: "64px",
-						borderRadius: "50%",
+						position: "fixed",
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						background: "rgba(0,0,0,0.7)",
+						backdropFilter: "blur(4px)",
 						display: "flex",
 						alignItems: "center",
 						justifyContent: "center",
-						margin: "0 auto 20px",
+						zIndex: 1000,
 					}}
+					onKeyDown={(e) => e.key === "Escape" && setShowDeleteModal(false)}
+					onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}
 				>
-					<CategoryIcon
-						name="alert-triangle"
-						size={32}
-						style={{ color: "#EF4444" }}
-					/>
-				</div>
-				<h2
-					style={{
-						fontSize: "20px",
-						fontWeight: 700,
-						color: "#FFF",
-						marginBottom: "12px",
-					}}
-				>
-					Excluir Lançamento?
-				</h2>
-				<p
-					style={{
-						color: "var(--text-muted)",
-						fontSize: "14px",
-						lineHeight: 1.5,
-						marginBottom: "24px",
-					}}
-				>
-					Esta ação não pode ser desfeita.
-				</p>
-				<div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
-					<button
-						type="button"
-						onClick={() => setShowDeleteModal(false)}
+					<div
 						style={{
-							background: "transparent",
+							background: "var(--bg-card)",
 							border: "1px solid var(--border)",
-							color: "var(--text-secondary)",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
+							borderRadius: "20px",
+							padding: "32px",
+							maxWidth: "400px",
+							textAlign: "center",
 						}}
 					>
-						Cancelar
-					</button>
-					<button
-						type="button"
-						onClick={deleteLancamento}
-						style={{
-							background: "#EF4444",
-							border: "none",
-							color: "#FFF",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
-						}}
-					>
-						Excluir
-					</button>
+						<div
+							style={{
+								background: "rgba(239,68,68,0.1)",
+								width: "64px",
+								height: "64px",
+								borderRadius: "50%",
+								display: "flex",
+								alignItems: "center",
+								justifyContent: "center",
+								margin: "0 auto 20px",
+							}}
+						>
+							<CategoryIcon
+								name="alert-triangle"
+								size={32}
+								style={{ color: "#EF4444" }}
+							/>
+						</div>
+						<h2
+							style={{
+								fontSize: "20px",
+								fontWeight: 700,
+								color: "#FFF",
+								marginBottom: "12px",
+							}}
+						>
+							Excluir Lançamento?
+						</h2>
+						<p
+							style={{
+								color: "var(--text-muted)",
+								fontSize: "14px",
+								lineHeight: 1.5,
+								marginBottom: "24px",
+							}}
+						>
+							Esta ação não pode ser desfeita.
+						</p>
+						<div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+							<Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
+								Cancelar
+							</Button>
+							<Button
+								type="button"
+								onClick={deleteLancamento}
+								style={{ background: "#EF4444", color: "#FFF" }}
+							>
+								Excluir
+							</Button>
+						</div>
+					</div>
 				</div>
-			</div>
-		</div>
+			)}
 		</main>
 	);
 }
