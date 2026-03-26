@@ -60,9 +60,6 @@ export default function Layout({ children }: LayoutProps) {
 	const { data: activeOrg } = authClient.useActiveOrganization();
 	const { data: userOrgs } = authClient.useListOrganizations();
 
-	localStorage.setItem("debug_active_org", JSON.stringify(activeOrg));
-	localStorage.setItem("debug_user_orgs", JSON.stringify(userOrgs));
-
 	const isAuthPage =
 		location.pathname === "/login" || location.pathname === "/signup";
 
