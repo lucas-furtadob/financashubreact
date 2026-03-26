@@ -389,7 +389,7 @@ function ContasPage() {
 							<TableHeader>Banco</TableHeader>
 							<TableHeader>Nome da Conta</TableHeader>
 							<TableHeader>Tipo</TableHeader>
-							<TableHeader style={{ textAlign: "right" }}>
+							<TableHeader>
 								Saldo Atual
 							</TableHeader>
 							<TableHeader>Situação</TableHeader>

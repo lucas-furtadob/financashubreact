@@ -11,10 +11,10 @@ import {
 	Trash2,
 	Upload,
 } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
-import { appStore, type Transacao } from "@/lib/app-store";
+import { authClient } from "@/lib/auth-client";
 import { CategoryIcon } from "@/lib/category-icons";
 import {
 	formatCurrency,
@@ -23,7 +23,6 @@ import {
 	parseCurrency,
 } from "@/lib/formatters";
 import {
-	downloadTemplate,
 	exportToCSV,
 	exportToXLS,
 	formatFileSize,
@@ -31,6 +30,7 @@ import {
 	parseCSV,
 	parseOFX,
 } from "@/lib/import-export";
+import { supabase } from "@/lib/supabase";
 import { ActionButton, ActionMenu } from "../components/ds/ActionMenu";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
@@ -61,45 +61,6 @@ interface Lancamento {
 	conta?: string;
 }
 
-const MOCK_LANCAMENTOS: Lancamento[] = [
-	{
-		id: "1",
-		data: "05/03/2026",
-		descricao: "Supermercado Extra",
-		categoria: "Alimentação",
-		status: "Pago",
-		valor: 350.0,
-		tipo: "despesa",
-	},
-	{
-		id: "2",
-		data: "08/03/2026",
-		descricao: "Aluguel Março",
-		categoria: "Moradia",
-		status: "Pago",
-		valor: 1800.0,
-		tipo: "despesa",
-	},
-	{
-		id: "3",
-		data: "10/03/2026",
-		descricao: "Conta de Luz",
-		categoria: "Moradia",
-		status: "Pago",
-		valor: 280.0,
-		tipo: "despesa",
-	},
-	{
-		id: "5",
-		data: "15/03/2026",
-		descricao: "Salário March",
-		categoria: "Receita",
-		status: "Recebido",
-		valor: 15000.0,
-		tipo: "receita",
-	},
-];
-
 const MESES = [
 	"JANEIRO",
 	"FEVEREIRO",
@@ -122,12 +83,48 @@ const CATEGORIAS = [
 	{ id: "saude", nome: "Saúde", tipo: "despesa" },
 	{ id: "lazer", nome: "Lazer", tipo: "despesa" },
 	{ id: "receita", nome: "Receita", tipo: "receita" },
+	{ id: "salario", nome: "Salário", tipo: "receita" },
+	{ id: "investimento", nome: "Investimento", tipo: "receita" },
+	{ id: "outros", nome: "Outros", tipo: "despesa" },
 ];
 
 const CONTAS = [
 	{ id: "nubank", nome: "Nubank PJ" },
 	{ id: "bb", nome: "Banco do Brasil" },
+	{ id: "carteira", nome: "Carteira" },
 ];
+
+async function ensureCategoriasContas(orgId: string) {
+	const { data: existingCats } = await supabase
+		.from("categoria")
+		.select("id")
+		.eq("organization_id", orgId);
+	if (!existingCats?.length) {
+		for (const cat of CATEGORIAS) {
+			await supabase.from("categoria").insert({
+				id: cat.id,
+				organization_id: orgId,
+				nome: cat.nome,
+				tipo: cat.tipo,
+			});
+		}
+	}
+
+	const { data: existingContas } = await supabase
+		.from("conta_financeira")
+		.select("id")
+		.eq("organization_id", orgId);
+	if (!existingContas?.length) {
+		for (const conta of CONTAS) {
+			await supabase.from("conta_financeira").insert({
+				id: conta.id,
+				organization_id: orgId,
+				nome: conta.nome,
+				tipo: "corrente",
+			});
+		}
+	}
+}
 
 interface ImportRow {
 	data: string;
@@ -143,8 +140,8 @@ interface ImportRow {
 }
 
 function LancamentosPage() {
-	const [lancamentos, setLancamentos] =
-		useState<Lancamento[]>(MOCK_LANCAMENTOS);
+	const { data: activeOrg } = authClient.useActiveOrganization();
+	const [lancamentos, setLancamentos] = useState<Lancamento[]>([]);
 	const [currentMonth, setCurrentMonth] = useState(3);
 	const [currentYear, setCurrentYear] = useState(2026);
 	const [filtroTipo, setFiltroTipo] = useState("todos");
@@ -166,7 +163,6 @@ function LancamentosPage() {
 	}>({});
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
-
 	const [showImportModal, setShowImportModal] = useState(false);
 	const [importStep, setImportStep] = useState(1);
 	const [importFile, setImportFile] = useState<File | null>(null);
@@ -176,13 +172,61 @@ function LancamentosPage() {
 		{},
 	);
 	const [validatedRows, setValidatedRows] = useState<ImportRow[]>([]);
-	const [showExportMenu, setShowExportMenu] = useState(false);
 	const fileInputRef = useRef<HTMLInputElement>(null);
 
-	const filteredLancamentos = lancamentos.filter((l) => {
-		if (filtroTipo === "todos") return true;
-		return l.tipo === filtroTipo;
-	});
+	const loadTransacoes = async (orgId: string) => {
+		try {
+			const { data: trans, error } = await supabase
+				.from("transacao")
+				.select("*")
+				.eq("organization_id", orgId)
+				.order("data", { ascending: false });
+
+			if (error) {
+				console.error("Erro ao carregar:", error);
+				setLancamentos([]);
+			} else {
+				setLancamentos(
+					(trans || []).map((t: any) => ({
+						id: t.id,
+						data: new Date(t.data).toLocaleDateString("pt-BR"),
+						descricao: t.descricao,
+						categoria: t.categoria_id,
+						status: t.status === "concluida" ? "Pago" : "Pendente",
+						valor: Number(t.valor),
+						tipo: t.tipo,
+						conta: t.conta_id,
+					})),
+				);
+			}
+		} catch (err) {
+			console.error("Erro:", err);
+			setLancamentos([]);
+		}
+	};
+
+	useEffect(() => {
+		if (activeOrg?.id) {
+			ensureCategoriasContas(activeOrg.id).then(() => {
+				loadTransacoes(activeOrg.id);
+			});
+		}
+	}, [activeOrg?.id]);
+
+	const parseDate = (dateStr: string) => {
+		const [day, month, year] = dateStr.split("/").map(Number);
+		return new Date(year, month - 1, day).getTime();
+	};
+
+	const filteredLancamentos = lancamentos
+		.filter((l) => {
+			const mes = getMonthFromDate(l.data);
+			const ano = getYearFromDate(l.data);
+			const isSamePeriod = mes === currentMonth && ano === currentYear;
+			const matchesType = filtroTipo === "todos" || l.tipo === filtroTipo;
+			return isSamePeriod && matchesType;
+		})
+		.sort((a, b) => parseDate(b.data) - parseDate(a.data));
 
 	const getMonthFromDate = (dateStr: string) => {
 		const parts = dateStr.split("/");
@@ -250,8 +294,19 @@ function LancamentosPage() {
 		return Object.keys(newErrors).length === 0;
 	};
 
-	const saveLancamento = () => {
-		if (!validate()) return;
+	const saveLancamento = async () => {
+		console.log("saveLancamento chamado", {
+			valor,
+			data,
+			descricao,
+			categoria,
+			conta,
+			activeOrg,
+		});
+		if (!validate() || !activeOrg?.id) {
+			console.log("validation failed or no org", { errors, activeOrg });
+			return;
+		}
 
 		const valorNum = parseCurrency(valor);
 		const mes = parseInt(data.split("/")[1]);
@@ -274,17 +329,30 @@ function LancamentosPage() {
 						: l,
 				),
 			);
-			// Atualiza no store
-			appStore.updateTransacao(editingId, {
-				valor: valorNum,
-				descricao,
-				categoriaId: categoria,
-				status:
-					status === "Pago" || status === "Recebido" ? "concluida" : "pendente",
-				tipo: tipoSelecionado as any,
-				mes,
-				ano,
-			});
+
+			const { error } = await supabase
+				.from("transacao")
+				.update({
+					descricao,
+					valor: String(valorNum),
+					data: new Date(
+						ano,
+						mes - 1,
+						parseInt(data.split("/")[0]),
+					).toISOString(),
+					categoria_id: categoria,
+					conta_id: conta,
+					status:
+						status === "Pago" || status === "Recebido"
+							? "concluida"
+							: "pendente",
+					tipo: tipoSelecionado,
+					mes,
+					ano,
+				})
+				.eq("id", editingId);
+
+			if (error) console.error("Erro ao atualizar:", error);
 		} else {
 			const newLanc: Lancamento = {
 				id: `lanc_${Date.now()}`,
@@ -297,22 +365,30 @@ function LancamentosPage() {
 				tipo: tipoSelecionado,
 			};
 			setLancamentos([...lancamentos, newLanc]);
-			// Adiciona ao store
-			appStore.addTransacao({
+
+			const { error } = await supabase.from("transacao").insert({
 				id: newLanc.id,
-				data: new Date(ano, mes - 1, parseInt(data.split("/")[0])),
+				organization_id: activeOrg?.id,
+				conta_id: conta || "nubank",
+				categoria_id: categoria,
+				user_id: "user",
 				descricao: newLanc.descricao,
-				categoriaId: newLanc.categoria,
-				valor: newLanc.valor,
-				tipo: newLanc.tipo as any,
+				valor: String(newLanc.valor),
+				data: new Date(
+					ano,
+					mes - 1,
+					parseInt(data.split("/")[0]),
+				).toISOString(),
+				mes,
+				ano,
+				tipo: newLanc.tipo,
 				status:
 					newLanc.status === "Pago" || newLanc.status === "Recebido"
 						? "concluida"
 						: "pendente",
-				contaId: newLanc.conta,
-				mes,
-				ano,
 			});
+
+			if (error) console.error("Erro ao inserir:", error);
 		}
 		closeModal();
 	};
@@ -322,17 +398,16 @@ function LancamentosPage() {
 		setShowDeleteModal(true);
 	};
 
-	const deleteLancamento = () => {
+	const deleteLancamento = async () => {
 		if (deleteId) {
 			setLancamentos(lancamentos.filter((l) => l.id !== deleteId));
-			appStore.deleteTransacao(deleteId);
+			await supabase.from("transacao").delete().eq("id", deleteId);
 		}
 		setShowDeleteModal(false);
 		setDeleteId(null);
 	};
 
 	const handleExport = (format: "csv" | "xls") => {
-		setShowExportMenu(false);
 		const headers = [
 			"Data",
 			"Descrição",
@@ -484,17 +559,6 @@ function LancamentosPage() {
 		newRows[idx].ignored = !newRows[idx].ignored;
 		setValidatedRows(newRows);
 	};
-
-	const updateRowField = (
-		idx: number,
-		field: keyof ImportRow,
-		value: string,
-	) => {
-		const newRows = [...validatedRows];
-		(newRows[idx] as Record<string, unknown>)[field] = value;
-		setValidatedRows(newRows);
-	};
-
 	return (
 		<main
 			style={{
@@ -531,12 +595,6 @@ function LancamentosPage() {
 						}}
 					/>
 					<ActionButton
-						icon={<Plus size={18} />}
-						label="Novo lançamento"
-						onClick={() => openModal()}
-						variant="primary"
-					/>
-					<ActionButton
 						icon={<Upload size={16} />}
 						label="Importar"
 						onClick={() => setShowImportModal(true)}
@@ -564,6 +622,12 @@ function LancamentosPage() {
 								icon: <FileSpreadsheet size={16} />,
 							},
 						]}
+					/>
+					<ActionButton
+						icon={<Plus size={18} />}
+						label="Novo lançamento"
+						onClick={() => openModal()}
+						variant="primary"
 					/>
 				</PageActions>
 			</header>
@@ -751,7 +815,7 @@ function LancamentosPage() {
 							<TableHeader>Descrição</TableHeader>
 							<TableHeader>Categoria</TableHeader>
 							<TableHeader>Status</TableHeader>
-							<TableHeader style={{ textAlign: "right" }}>Valor</TableHeader>
+							<TableHeader>Valor</TableHeader>
 							<TableHeader style={{ width: "100px" }}>Ações</TableHeader>
 						</TableRow>
 					</TableHead>
@@ -1737,9 +1801,7 @@ function LancamentosPage() {
 													<TableHeader style={{ width: "40px" }}></TableHeader>
 													<TableHeader>Data</TableHeader>
 													<TableHeader>Título</TableHeader>
-													<TableHeader style={{ textAlign: "right" }}>
-														Valor
-													</TableHeader>
+													<TableHeader>Valor</TableHeader>
 													<TableHeader>Status</TableHeader>
 												</TableRow>
 											</TableHead>
@@ -1760,7 +1822,6 @@ function LancamentosPage() {
 														<TableCell>{row.titulo}</TableCell>
 														<TableCell
 															style={{
-																textAlign: "right",
 																color:
 																	row.tipo === "receita"
 																		? "#22C55E"

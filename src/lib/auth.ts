@@ -10,16 +10,29 @@ const resend = process.env.RESEND_API_KEY
 	? new Resend(process.env.RESEND_API_KEY)
 	: null;
 
+const getBaseURL = () => {
+    if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
+    if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}`;
+    return "http://localhost:3000";
+};
+
+const trustedOrigins = [
+    "http://localhost:3000",
+    "http://localhost:3002",
+    "http://localhost:3008",
+    "http://localhost:3009",
+    "http://localhost:3011",
+    "https://financashubreact.vercel.app",
+];
+
+if (process.env.VERCEL_URL) {
+    trustedOrigins.push(`https://${process.env.VERCEL_URL}`);
+}
+
 export const auth = betterAuth({
-	trustedOrigins: [
-		"http://localhost:3000",
-		"http://localhost:3002",
-		"http://localhost:3008",
-		"http://localhost:3009",
-		"http://localhost:3011",
-		"https://financashubreact.vercel.app",
-	],
-	database: drizzleAdapter(db, {
+    baseURL: getBaseURL(),
+    trustedOrigins,
+    database: drizzleAdapter(db, {
 		provider: "pg",
 		schema: {
 			user: schema.user,

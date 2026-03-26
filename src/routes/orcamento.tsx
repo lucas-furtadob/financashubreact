@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState, useSyncExternalStore } from "react";
+import { useMemo, useState } from "react";
 import { ActionButton } from "@/components/ds/ActionMenu";
 import { PageActions } from "@/components/ds/PageActions";
 import {
@@ -651,9 +651,9 @@ function OrcamentoPage() {
 				<TableHead sticky>
 					<TableRow>
 						<TableHeader>Categoria</TableHeader>
-						<TableHeader style={{ textAlign: "right" }}>Gasto</TableHeader>
-						<TableHeader style={{ textAlign: "right" }}>Orçado</TableHeader>
-						<TableHeader style={{ textAlign: "right" }}>Restante</TableHeader>
+						<TableHeader>Gasto</TableHeader>
+						<TableHeader>Orçado</TableHeader>
+						<TableHeader>Restante</TableHeader>
 						<TableHeader style={{ textAlign: "center" }}>Progresso</TableHeader>
 						<TableHeader style={{ width: "100px" }}>Ações</TableHeader>
 					</TableRow>
@@ -725,18 +725,16 @@ function OrcamentoPage() {
 									</TableCell>
 									<TableCell
 										style={{
-											textAlign: "right",
 											color: isEstouro ? "#EF4444" : "inherit",
 										}}
 									>
 										{formatCurrency(gastoReal)}
 									</TableCell>
-									<TableCell style={{ textAlign: "right" }}>
+									<TableCell>
 										{formatCurrency(orc.valor_planejado)}
 									</TableCell>
 									<TableCell
 										style={{
-											textAlign: "right",
 											color: restante < 0 ? "#EF4444" : "#22C55E",
 										}}
 									>

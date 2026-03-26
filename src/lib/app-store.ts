@@ -31,7 +31,9 @@ class AppStore {
 
 	subscribe(listener: () => void) {
 		this.listeners.add(listener);
-		return () => this.listeners.delete(listener);
+		return () => {
+			this.listeners.delete(listener);
+		};
 	}
 
 	notify() {
@@ -101,10 +103,10 @@ class AppStore {
 export const appStore = new AppStore();
 
 export function useStore() {
-	const state = useSyncExternalStore(
+	useSyncExternalStore(
 		appStore.subscribe.bind(appStore),
-		() => ({}),
-		() => ({}),
+		() => appStore.transacoes.length + appStore.orcamentos.length,
+		() => 0,
 	);
 
 	return {
