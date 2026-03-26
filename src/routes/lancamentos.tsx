@@ -498,6 +498,46 @@ function LancamentosPage() {
 							setCurrentYear(year);
 						}}
 					/>
+					<button
+						type="button"
+						onClick={() => openModal()}
+						style={{
+							background: "var(--accent)",
+							color: "#FFF",
+							border: "none",
+							padding: "10px 20px",
+							borderRadius: "8px",
+							fontWeight: 600,
+							fontSize: "14px",
+							cursor: "pointer",
+							display: "flex",
+							alignItems: "center",
+							gap: "8px",
+						}}
+					>
+						<Plus size={18} />
+						Novo lançamento
+					</button>
+					<button
+						type="button"
+						onClick={() => setShowImportModal(true)}
+						style={{
+							background: "transparent",
+							border: "1px solid var(--border)",
+							padding: "8px 14px",
+							borderRadius: "8px",
+							fontWeight: 500,
+							fontSize: "13px",
+							cursor: "pointer",
+							display: "flex",
+							alignItems: "center",
+							gap: "6px",
+							color: "var(--text-secondary)",
+						}}
+					>
+						<Upload size={16} />
+						Importar
+					</button>
 					<div style={{ position: "relative" }}>
 						<button
 							type="button"
@@ -505,19 +545,20 @@ function LancamentosPage() {
 							style={{
 								background: "transparent",
 								border: "1px solid var(--border)",
-								padding: "10px 16px",
+								padding: "8px 14px",
 								borderRadius: "8px",
-								fontWeight: 600,
+								fontWeight: 500,
+								fontSize: "13px",
 								cursor: "pointer",
 								display: "flex",
 								alignItems: "center",
-								gap: "8px",
-								color: "#FFF",
+								gap: "6px",
+								color: "var(--text-secondary)",
 							}}
 						>
-							<Download size={18} />
+							<Download size={16} />
 							Exportar
-							<ChevronDown size={16} />
+							<ChevronDown size={14} />
 						</button>
 						{showExportMenu && (
 							<div
@@ -549,6 +590,7 @@ function LancamentosPage() {
 										cursor: "pointer",
 										borderRadius: "6px",
 										textAlign: "left",
+										fontSize: "13px",
 									}}
 								>
 									<FileText size={16} />
@@ -569,6 +611,7 @@ function LancamentosPage() {
 										cursor: "pointer",
 										borderRadius: "6px",
 										textAlign: "left",
+										fontSize: "13px",
 									}}
 								>
 									<FileSpreadsheet size={16} />
@@ -577,46 +620,6 @@ function LancamentosPage() {
 							</div>
 						)}
 					</div>
-					<button
-						type="button"
-						onClick={() => {
-							downloadTemplate();
-						}}
-						style={{
-							background: "transparent",
-							border: "1px solid var(--border)",
-							padding: "10px 16px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "8px",
-							color: "#FFF",
-						}}
-					>
-						<Upload size={18} />
-						Importar
-					</button>
-					<button
-						type="button"
-						onClick={() => openModal()}
-						style={{
-							background: "var(--accent)",
-							color: "#FFF",
-							border: "none",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "8px",
-						}}
-					>
-						<Plus size={18} />
-						Novo
-					</button>
 				</div>
 			</header>
 
