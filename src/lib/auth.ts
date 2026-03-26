@@ -45,8 +45,12 @@ export const auth = betterAuth({
 		organization(),
 		magicLink({
 			sendMagicLink: async ({ email, url }) => {
+				console.log("Magic link called for:", email);
+				console.log("Resend initialized:", !!resend);
+				console.log("Resend key:", resend ? "yes" : "no");
+
 				if (!resend) {
-					console.log(`Magic Link para ${email}: ${url}`);
+					console.log(`[FALLBACK] Magic Link para ${email}: ${url}`);
 					return;
 				}
 				try {
