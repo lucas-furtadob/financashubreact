@@ -1700,97 +1700,46 @@ function LancamentosPage() {
 											borderRadius: "8px",
 										}}
 									>
-										<table
-											style={{
-												width: "100%",
-												borderCollapse: "collapse",
-												fontSize: "13px",
-											}}
-										>
-											<thead>
-												<tr style={{ background: "#1F1F23" }}>
-													<th
-														style={{
-															padding: "12px",
-															textAlign: "left",
-															color: "var(--text-muted)",
-														}}
-													></th>
-													<th
-														style={{
-															padding: "12px",
-															textAlign: "left",
-															color: "var(--text-muted)",
-														}}
-													>
-														Data
-													</th>
-													<th
-														style={{
-															padding: "12px",
-															textAlign: "left",
-															color: "var(--text-muted)",
-														}}
-													>
-														Título
-													</th>
-													<th
-														style={{
-															padding: "12px",
-															textAlign: "right",
-															color: "var(--text-muted)",
-														}}
-													>
+										<Table>
+											<TableHead>
+												<TableRow>
+													<TableHeader style={{ width: "40px" }}></TableHeader>
+													<TableHeader>Data</TableHeader>
+													<TableHeader>Título</TableHeader>
+													<TableHeader style={{ textAlign: "right" }}>
 														Valor
-													</th>
-													<th
-														style={{
-															padding: "12px",
-															textAlign: "left",
-															color: "var(--text-muted)",
-														}}
-													>
-														Status
-													</th>
-												</tr>
-											</thead>
-											<tbody>
+													</TableHeader>
+													<TableHeader>Status</TableHeader>
+												</TableRow>
+											</TableHead>
+											<TableBody>
 												{validatedRows.slice(0, 50).map((row, idx) => (
-													<tr
+													<TableRow
 														key={idx}
-														style={{
-															borderTop: "1px solid var(--border)",
-															opacity: row.ignored ? 0.5 : 1,
-														}}
+														style={{ opacity: row.ignored ? 0.5 : 1 }}
 													>
-														<td style={{ padding: "8px" }}>
+														<TableCell>
 															<input
 																type="checkbox"
 																checked={!row.ignored}
 																onChange={() => toggleRowIgnored(idx)}
 															/>
-														</td>
-														<td style={{ padding: "8px", color: "#FFF" }}>
-															{row.data}
-														</td>
-														<td style={{ padding: "8px", color: "#FFF" }}>
-															{row.titulo}
-														</td>
-														<td
+														</TableCell>
+														<TableCell>{row.data}</TableCell>
+														<TableCell>{row.titulo}</TableCell>
+														<TableCell
 															style={{
-																padding: "8px",
 																textAlign: "right",
 																color:
 																	row.tipo === "receita"
 																		? "#22C55E"
 																		: "#EF4444",
-																fontFamily: "monospace",
 															}}
 														>
 															{row.tipo === "receita" ? "+" : "-"}
 															{row.valorStr}
-														</td>
-														<td style={{ padding: "8px" }}>
+														</TableCell>
+														<TableCell>
 															{row.errors.length > 0 ? (
 																<span
 																	style={{ color: "#EF4444", fontSize: "12px" }}
@@ -1804,11 +1753,11 @@ function LancamentosPage() {
 																	OK
 																</span>
 															)}
-														</td>
-													</tr>
+														</TableCell>
+													</TableRow>
 												))}
-											</tbody>
-										</table>
+											</TableBody>
+										</Table>
 									</div>
 									{validatedRows.length > 50 && (
 										<p

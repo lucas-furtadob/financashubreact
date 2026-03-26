@@ -6,6 +6,7 @@ import {
 	Table,
 	TableBody,
 	TableCell,
+	TableEmpty,
 	TableHead,
 	TableHeader,
 	TableRow,
@@ -634,330 +635,195 @@ function OrcamentoPage() {
 				</div>
 			)}
 
-			{/* Table */}
-			<div
-				className="table-container"
-				style={{
-					margin: "0 48px",
-					background: "var(--bg-card)",
-					borderRadius: "12px",
-					border: "1px solid var(--border)",
-					flex: 1,
-					overflow: "auto",
-					maxHeight: "500px",
-				}}
-			>
-				<table
-					className="categories-table"
-					style={{ width: "100%", borderCollapse: "collapse" }}
-				>
-					<thead style={{ position: "sticky", top: 0, zIndex: 1 }}>
-						<tr
-							style={{
-								borderBottom: "1px solid var(--border)",
-								background: "var(--bg-card)",
-							}}
-						>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "left",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Categoria
-							</th>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "right",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Gasto
-							</th>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "right",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Orçado
-							</th>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "right",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Restante
-							</th>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "center",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Progresso
-							</th>
-							<th
-								style={{
-									padding: "16px",
-									textAlign: "left",
-									width: "100px",
-									fontSize: "12px",
-									fontWeight: 600,
-									color: "var(--text-muted)",
-									textTransform: "uppercase",
-								}}
-							>
-								Ações
-							</th>
-						</tr>
-					</thead>
-					<tbody>
-						{orcamentosDoMes.length === 0 ? (
-							<tr>
-								<td
-									colSpan={6}
-									style={{
-										textAlign: "center",
-										padding: "48px",
-										color: "var(--text-muted)",
-									}}
-								>
-									<CategoryIcon
-										name="inbox"
-										size={48}
-										style={{
-											marginBottom: "16px",
-											opacity: 0.5,
-										}}
-									/>
-									<p>Nenhum orçamento configurado para este mês.</p>
-									<button
-										type="button"
-										className="btn-primary"
-										onClick={() => openModal()}
-										style={{
-											marginTop: "16px",
-											background: "var(--accent)",
-											color: "#FFF",
-											border: "none",
-											padding: "10px 20px",
-											borderRadius: "8px",
-											fontWeight: 600,
-											cursor: "pointer",
-											display: "inline-flex",
-											alignItems: "center",
-											gap: "8px",
-										}}
-									>
-										<CategoryIcon name="plus" size={16} />
-										Adicionar Primeira Categoria
-									</button>
-								</td>
-							</tr>
-						) : (
-							orcamentosDoMes.map((orc) => {
-								const cat = getCategoriaById(orc.categoria_id);
-								if (!cat) return null;
+			<Table scroll>
+				<TableHead sticky>
+					<TableRow>
+						<TableHeader>Categoria</TableHeader>
+						<TableHeader style={{ textAlign: "right" }}>Gasto</TableHeader>
+						<TableHeader style={{ textAlign: "right" }}>Orçado</TableHeader>
+						<TableHeader style={{ textAlign: "right" }}>Restante</TableHeader>
+						<TableHeader style={{ textAlign: "center" }}>Progresso</TableHeader>
+						<TableHeader style={{ width: "100px" }}>Ações</TableHeader>
+					</TableRow>
+				</TableHead>
+				<TableBody>
+					{orcamentosDoMes.length === 0 ? (
+						<TableEmpty
+							colSpan={6}
+							message="Nenhum orçamento configurado para este mês."
+							icon={
+								<CategoryIcon name="inbox" size={48} style={{ opacity: 0.5 }} />
+							}
+						/>
+					) : (
+						orcamentosDoMes.map((orc) => {
+							const cat = getCategoriaById(orc.categoria_id);
+							if (!cat) return null;
 
-								const gastoReal = getGastoReal(orc.categoria_id);
-								const restante = orc.valor_planejado - gastoReal;
-								const perc =
-									orc.valor_planejado > 0
-										? (gastoReal / orc.valor_planejado) * 100
-										: 0;
-								const isEstouro = gastoReal > orc.valor_planejado;
+							const gastoReal = getGastoReal(orc.categoria_id);
+							const restante = orc.valor_planejado - gastoReal;
+							const perc =
+								orc.valor_planejado > 0
+									? (gastoReal / orc.valor_planejado) * 100
+									: 0;
+							const isEstouro = gastoReal > orc.valor_planejado;
 
-								let progressColor = "#22C55E";
-								if (perc >= 100) progressColor = "#EF4444";
-								else if (perc >= 75) progressColor = "#F59E0B";
+							let progressColor = "#22C55E";
+							if (perc >= 100) progressColor = "#EF4444";
+							else if (perc >= 75) progressColor = "#F59E0B";
 
-								return (
-									<tr
-										key={orc.id}
-										style={{ borderBottom: "1px solid var(--border)" }}
-									>
-										<td style={{ padding: "16px" }}>
+							return (
+								<TableRow key={orc.id}>
+									<TableCell>
+										<div
+											style={{
+												display: "flex",
+												alignItems: "center",
+												gap: "12px",
+											}}
+										>
 											<div
 												style={{
+													background: `${cat.cor}20`,
+													color: cat.cor,
+													width: "36px",
+													height: "36px",
+													borderRadius: "8px",
 													display: "flex",
 													alignItems: "center",
-													gap: "12px",
+													justifyContent: "center",
 												}}
 											>
-												<div
-													style={{
-														background: `${cat.cor}20`,
-														color: cat.cor,
-														width: "36px",
-														height: "36px",
-														borderRadius: "8px",
-														display: "flex",
-														alignItems: "center",
-														justifyContent: "center",
-													}}
-												>
-													<CategoryIcon name={cat.icon || "tag"} size={18} />
-												</div>
-												<div
-													style={{ display: "flex", flexDirection: "column" }}
-												>
-													<span>{cat.nome}</span>
-													{cat.paiId && (
-														<span
-															style={{
-																fontSize: "12px",
-																color: "var(--text-muted)",
-															}}
-														>
-															{getCategoriaById(cat.paiId)?.nome}
-														</span>
-													)}
-												</div>
+												<CategoryIcon name={cat.icon || "tag"} size={18} />
 											</div>
-										</td>
-										<td
+											<div style={{ display: "flex", flexDirection: "column" }}>
+												<span>{cat.nome}</span>
+												{cat.paiId && (
+													<span
+														style={{
+															fontSize: "12px",
+															color: "var(--text-muted)",
+														}}
+													>
+														{getCategoriaById(cat.paiId)?.nome}
+													</span>
+												)}
+											</div>
+										</div>
+									</TableCell>
+									<TableCell
+										style={{
+											textAlign: "right",
+											color: isEstouro ? "#EF4444" : "inherit",
+										}}
+									>
+										{formatCurrency(gastoReal)}
+									</TableCell>
+									<TableCell style={{ textAlign: "right" }}>
+										{formatCurrency(orc.valor_planejado)}
+									</TableCell>
+									<TableCell
+										style={{
+											textAlign: "right",
+											color: restante < 0 ? "#EF4444" : "#22C55E",
+										}}
+									>
+										{formatCurrency(restante)}
+									</TableCell>
+									<TableCell style={{ textAlign: "center" }}>
+										<div
 											style={{
-												textAlign: "right",
-												fontFamily: "'Inter', sans-serif",
-												color: isEstouro ? "#EF4444" : "inherit",
+												width: "120px",
+												height: "24px",
+												background: "var(--bg-item)",
+												borderRadius: "12px",
+												position: "relative",
+												overflow: "hidden",
+												margin: "0 auto",
 											}}
 										>
-											{formatCurrency(gastoReal)}
-										</td>
-										<td
-											style={{
-												textAlign: "right",
-												fontFamily: "'Inter', sans-serif",
-											}}
-										>
-											{formatCurrency(orc.valor_planejado)}
-										</td>
-										<td
-											style={{
-												textAlign: "right",
-												fontFamily: "'Inter', sans-serif",
-												color: restante < 0 ? "#EF4444" : "#22C55E",
-											}}
-										>
-											{formatCurrency(restante)}
-										</td>
-										<td style={{ textAlign: "center" }}>
 											<div
 												style={{
-													width: "120px",
-													height: "24px",
-													background: "var(--bg-item)",
+													height: "100%",
+													width: `${Math.min(perc, 100)}%`,
+													background: progressColor,
 													borderRadius: "12px",
-													position: "relative",
-													overflow: "hidden",
-													margin: "0 auto",
+													transition: "width 0.3s",
+												}}
+											></div>
+											<span
+												style={{
+													position: "absolute",
+													top: "50%",
+													left: "50%",
+													transform: "translate(-50%, -50%)",
+													fontSize: "11px",
+													fontWeight: 700,
+													textShadow: "0 1px 2px rgba(0,0,0,0.5)",
 												}}
 											>
-												<div
-													style={{
-														height: "100%",
-														width: `${Math.min(perc, 100)}%`,
-														background: progressColor,
-														borderRadius: "12px",
-														transition: "width 0.3s",
-													}}
-												></div>
-												<span
-													style={{
-														position: "absolute",
-														top: "50%",
-														left: "50%",
-														transform: "translate(-50%, -50%)",
-														fontSize: "11px",
-														fontWeight: 700,
-														textShadow: "0 1px 2px rgba(0,0,0,0.5)",
-													}}
-												>
-													{formatPercent(perc)}
-												</span>
-											</div>
-										</td>
-										<td>
-											<div style={{ display: "flex", gap: "4px" }}>
-												<button
-													type="button"
-													onClick={() => {
-														setViewTransactionsCat(cat);
-														setShowViewTransactions(true);
-													}}
-													title="Ver lançamentos"
-													style={{
-														background: "transparent",
-														border: "none",
-														color: "var(--text-secondary)",
-														cursor: "pointer",
-														padding: "8px",
-														borderRadius: "6px",
-													}}
-												>
-													<CategoryIcon name="eye" size={16} />
-												</button>
-												<button
-													type="button"
-													onClick={() => openModal(orc.id)}
-													title="Editar"
-													style={{
-														background: "transparent",
-														border: "none",
-														color: "var(--text-secondary)",
-														cursor: "pointer",
-														padding: "8px",
-														borderRadius: "6px",
-													}}
-												>
-													<CategoryIcon name="pencil" size={16} />
-												</button>
-												<button
-													type="button"
-													onClick={() => confirmDelete(orc.id)}
-													title="Excluir"
-													style={{
-														background: "transparent",
-														border: "none",
-														color: "var(--text-secondary)",
-														cursor: "pointer",
-														padding: "8px",
-														borderRadius: "6px",
-													}}
-												>
-													<CategoryIcon name="trash-2" size={16} />
-												</button>
-											</div>
-										</td>
-									</tr>
-								);
-							})
-						)}
-					</tbody>
-				</table>
-			</div>
+												{formatPercent(perc)}
+											</span>
+										</div>
+									</TableCell>
+									<TableCell>
+										<div style={{ display: "flex", gap: "4px" }}>
+											<button
+												type="button"
+												onClick={() => {
+													setViewTransactionsCat(cat);
+													setShowViewTransactions(true);
+												}}
+												title="Ver lançamentos"
+												style={{
+													background: "transparent",
+													border: "none",
+													color: "var(--text-secondary)",
+													cursor: "pointer",
+													padding: "8px",
+													borderRadius: "6px",
+												}}
+											>
+												<CategoryIcon name="eye" size={16} />
+											</button>
+											<button
+												type="button"
+												onClick={() => openModal(orc.id)}
+												title="Editar"
+												style={{
+													background: "transparent",
+													border: "none",
+													color: "var(--text-secondary)",
+													cursor: "pointer",
+													padding: "8px",
+													borderRadius: "6px",
+												}}
+											>
+												<CategoryIcon name="pencil" size={16} />
+											</button>
+											<button
+												type="button"
+												onClick={() => confirmDelete(orc.id)}
+												title="Excluir"
+												style={{
+													background: "transparent",
+													border: "none",
+													color: "var(--text-secondary)",
+													cursor: "pointer",
+													padding: "8px",
+													borderRadius: "6px",
+												}}
+											>
+												<CategoryIcon name="trash-2" size={16} />
+											</button>
+										</div>
+									</TableCell>
+								</TableRow>
+							);
+						})
+					)}
+				</TableBody>
+			</Table>
 
 			{/* Modal */}
 			{showModal && (
@@ -1876,95 +1742,34 @@ function OrcamentoPage() {
 								}
 
 								return (
-									<table
-										style={{
-											width: "100%",
-											borderCollapse: "collapse",
-										}}
-									>
-										<thead>
-											<tr>
-												<th
-													style={{
-														textAlign: "left",
-														padding: "12px 0",
-														fontSize: "12px",
-														color: "var(--text-muted)",
-														textTransform: "uppercase",
-														fontWeight: 600,
-														borderBottom: "1px solid var(--border)",
-													}}
-												>
-													Data
-												</th>
-												<th
-													style={{
-														textAlign: "left",
-														padding: "12px 0",
-														fontSize: "12px",
-														color: "var(--text-muted)",
-														textTransform: "uppercase",
-														fontWeight: 600,
-														borderBottom: "1px solid var(--border)",
-													}}
-												>
-													Descrição
-												</th>
-												<th
-													style={{
-														textAlign: "right",
-														padding: "12px 0",
-														fontSize: "12px",
-														color: "var(--text-muted)",
-														textTransform: "uppercase",
-														fontWeight: 600,
-														borderBottom: "1px solid var(--border)",
-													}}
-												>
+									<Table>
+										<TableHead>
+											<TableRow>
+												<TableHeader>Data</TableHeader>
+												<TableHeader>Descrição</TableHeader>
+												<TableHeader style={{ textAlign: "right" }}>
 													Valor
-												</th>
-											</tr>
-										</thead>
-										<tbody>
+												</TableHeader>
+											</TableRow>
+										</TableHead>
+										<TableBody>
 											{lancamentosCategoria.map((l) => (
-												<tr
-													key={l.id}
-													style={{ borderBottom: "1px solid var(--border)" }}
-												>
-													<td
-														style={{
-															padding: "12px 0",
-															fontSize: "13px",
-															color: "var(--text-muted)",
-														}}
-													>
+												<TableRow key={l.id}>
+													<TableCell style={{ color: "var(--text-muted)" }}>
 														{new Date(l.data_lancamento).toLocaleDateString(
 															"pt-BR",
 														)}
-													</td>
-													<td
-														style={{
-															padding: "12px 0",
-															fontSize: "14px",
-														}}
-													>
-														{l.descricao}
-													</td>
-													<td
-														style={{
-															padding: "12px 0",
-															textAlign: "right",
-															fontFamily: "'Inter', sans-serif",
-															fontWeight: 600,
-															color: "#EF4444",
-														}}
+													</TableCell>
+													<TableCell>{l.descricao}</TableCell>
+													<TableCell
+														style={{ textAlign: "right", color: "#EF4444" }}
 													>
 														{formatCurrency(parseFloat(l.valor))}
-													</td>
-												</tr>
+													</TableCell>
+												</TableRow>
 											))}
-										</tbody>
-									</table>
+										</TableBody>
+									</Table>
 								);
 							})()}
 						</div>
