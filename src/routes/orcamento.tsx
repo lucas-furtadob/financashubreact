@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import { ActionButton } from "@/components/ds/ActionMenu";
 import { PageActions } from "@/components/ds/PageActions";
 import {
@@ -13,6 +13,7 @@ import {
 } from "@/components/ds/Table";
 import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
+import { appStore } from "@/lib/app-store";
 import { CATEGORIAS, getCategoriasDespesas } from "@/lib/categorias";
 import { CategoryIcon } from "@/lib/category-icons";
 
@@ -130,6 +131,17 @@ function OrcamentoPage() {
 	};
 
 	const getGastoReal = (categoriaId: string) => {
+		// Primeiro tenta buscar do store
+		const gastoStore = appStore.getGastoPorCategoria(
+			categoriaId,
+			currentMonth,
+			currentYear,
+		);
+		if (appStore.transacoes.length > 0) {
+			return gastoStore;
+		}
+
+		// Fallback para dados mocados
 		const mesStr = String(currentMonth).padStart(2, "0");
 		const dataInicio = `${currentYear}-${mesStr}-01`;
 		const dataFim = new Date(currentYear, currentMonth, 0)

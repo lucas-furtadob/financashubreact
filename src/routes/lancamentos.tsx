@@ -14,6 +14,7 @@ import {
 import { useRef, useState } from "react";
 import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
+import { appStore, type Transacao } from "@/lib/app-store";
 import { CategoryIcon } from "@/lib/category-icons";
 import {
 	formatCurrency,
@@ -253,6 +254,8 @@ function LancamentosPage() {
 		if (!validate()) return;
 
 		const valorNum = parseCurrency(valor);
+		const mes = parseInt(data.split("/")[1]);
+		const ano = parseInt(data.split("/")[2]);
 
 		if (editingId) {
 			setLancamentos(
@@ -271,6 +274,17 @@ function LancamentosPage() {
 						: l,
 				),
 			);
+			// Atualiza no store
+			appStore.updateTransacao(editingId, {
+				valor: valorNum,
+				descricao,
+				categoriaId: categoria,
+				status:
+					status === "Pago" || status === "Recebido" ? "concluida" : "pendente",
+				tipo: tipoSelecionado as any,
+				mes,
+				ano,
+			});
 		} else {
 			const newLanc: Lancamento = {
 				id: `lanc_${Date.now()}`,
@@ -283,6 +297,22 @@ function LancamentosPage() {
 				tipo: tipoSelecionado,
 			};
 			setLancamentos([...lancamentos, newLanc]);
+			// Adiciona ao store
+			appStore.addTransacao({
+				id: newLanc.id,
+				data: new Date(ano, mes - 1, parseInt(data.split("/")[0])),
+				descricao: newLanc.descricao,
+				categoriaId: newLanc.categoria,
+				valor: newLanc.valor,
+				tipo: newLanc.tipo as any,
+				status:
+					newLanc.status === "Pago" || newLanc.status === "Recebido"
+						? "concluida"
+						: "pendente",
+				contaId: newLanc.conta,
+				mes,
+				ano,
+			});
 		}
 		closeModal();
 	};
@@ -295,6 +325,7 @@ function LancamentosPage() {
 	const deleteLancamento = () => {
 		if (deleteId) {
 			setLancamentos(lancamentos.filter((l) => l.id !== deleteId));
+			appStore.deleteTransacao(deleteId);
 		}
 		setShowDeleteModal(false);
 		setDeleteId(null);
