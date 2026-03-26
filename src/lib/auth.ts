@@ -6,9 +6,10 @@ import { Resend } from "resend";
 import { db } from "../db/index.ts";
 import * as schema from "../db/schema.ts";
 
-const resend = process.env.RESEND_API_KEY
-	? new Resend(process.env.RESEND_API_KEY)
-	: null;
+const getResend = () => {
+    if (!process.env.RESEND_API_KEY) return null;
+    return new Resend(process.env.RESEND_API_KEY);
+};
 
 const getBaseURL = () => {
     if (process.env.BETTER_AUTH_URL) return process.env.BETTER_AUTH_URL;
@@ -56,17 +57,21 @@ export const auth = betterAuth({
 	plugins: [
 		tanstackStartCookies(),
 		organization(),
-		magicLink({
+				magicLink({
 			sendMagicLink: async ({ email, url }) => {
-				console.log("Magic link called for:", email);
-				console.log("Resend initialized:", !!resend);
-				console.log("Resend key:", resend ? "yes" : "no");
+				console.log("== Magic Link Process Started ==");
+				console.log("Email target:", email);
+				console.log("Email URL generated:", url);
+				console.log("Resend Key Present? (length):", process.env.RESEND_API_KEY?.length || 0);
 
+				const resend = getResend();
 				if (!resend) {
+					console.error("Resend is NOT initialized (missing API Key)");
 					console.log(`[FALLBACK] Magic Link para ${email}: ${url}`);
 					return;
 				}
 				try {
+					console.log("Attempting to send email via Resend...");
 					const result = await resend.emails.send({
 						from: "FinançasHub <onboarding@resend.dev>",
 						to: email,
@@ -81,9 +86,10 @@ export const auth = betterAuth({
 							</div>
 						`,
 					});
-					console.log("E-mail enviado:", result);
+					console.log("Resend Success Result:", result);
 				} catch (error) {
-					console.error("Erro ao enviar e-mail:", error);
+					console.error("Resend Failure Error:", error);
+					throw error;
 				}
 			},
 		}),
