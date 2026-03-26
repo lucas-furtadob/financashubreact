@@ -11,6 +11,8 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { CategoryIcon } from "#/lib/category-icons";
+import { ActionButton } from "@/components/ds/ActionMenu";
+import { PageActions } from "@/components/ds/PageActions";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import {
@@ -379,25 +381,14 @@ function CategoriasPage() {
 						Gerencie as categorias de suas receitas, despesas e investimentos.
 					</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => openModal()}
-					style={{
-						background: "var(--accent)",
-						color: "#FFF",
-						border: "none",
-						padding: "10px 20px",
-						borderRadius: "8px",
-						fontWeight: 600,
-						cursor: "pointer",
-						display: "flex",
-						alignItems: "center",
-						gap: "8px",
-					}}
-				>
-					<CategoryIcon name="plus" size={16} />
-					Nova Categoria
-				</button>
+				<PageActions>
+					<ActionButton
+						icon={<CategoryIcon name="plus" size={16} />}
+						label="Nova Categoria"
+						onClick={() => openModal()}
+						variant="primary"
+					/>
+				</PageActions>
 			</header>
 
 			<div
