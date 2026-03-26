@@ -19,7 +19,7 @@ import {
 	Tags,
 	Wallet,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { authClient } from "#/lib/auth-client";
 
 interface LayoutProps {
@@ -56,9 +56,21 @@ export default function Layout({ children }: LayoutProps) {
 	const location = useLocation();
 	const navigate = useNavigate();
 
-	const { data: session } = authClient.useSession();
+	const { data: session, isPending } = authClient.useSession();
 	const { data: activeOrg } = authClient.useActiveOrganization();
 	const { data: userOrgs } = authClient.useListOrganizations();
+
+	localStorage.setItem("debug_active_org", JSON.stringify(activeOrg));
+	localStorage.setItem("debug_user_orgs", JSON.stringify(userOrgs));
+
+	const isAuthPage =
+		location.pathname === "/login" || location.pathname === "/signup";
+
+	useEffect(() => {
+		if (!isPending && !session && !isAuthPage) {
+			navigate({ to: "/login" });
+		}
+	}, [session, isPending, isAuthPage]);
 
 	const toggleSubmenu = (label: string) => {
 		setOpenSubmenus((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -78,9 +90,6 @@ export default function Layout({ children }: LayoutProps) {
 		if (href === "/") return location.pathname === "/";
 		return location.pathname.startsWith(href);
 	};
-
-	const isAuthPage =
-		location.pathname === "/login" || location.pathname === "/signup";
 
 	if (isAuthPage) {
 		return <main className="w-full">{children}</main>;
@@ -143,17 +152,53 @@ export default function Layout({ children }: LayoutProps) {
 									key={org.id}
 									className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 ${activeOrg?.id === org.id ? "text-teal-400 font-bold" : "text-slate-300"}`}
 									onClick={async () => {
-										await authClient.organization.setActive({
+										const result = await authClient.organization.setActive({
 											organizationId: org.id,
 										});
+										localStorage.setItem(
+											"debug_org_result",
+											JSON.stringify(result),
+										);
 										setShowOrgSelect(false);
+										window.location.reload();
 									}}
 								>
 									<div className="w-1.5 h-1.5 rounded-full bg-current" />
 									{org.name}
 								</div>
 							))}
-							<div className="flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 text-slate-400 border-t border-white/5 mt-1">
+							<div
+								className="flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 text-slate-400 border-t border-white/5 mt-1"
+								onClick={async () => {
+									const name = prompt("Nome do novo ambiente:");
+									if (name) {
+										try {
+											const { data, error } =
+												await authClient.organization.create({
+													name,
+													slug: name.toLowerCase().replace(/\s+/g, "-"),
+												});
+											console.log("Org created:", data, error);
+											if (data && !error) {
+												const setResult =
+													await authClient.organization.setActive({
+														organizationId: data.id,
+													});
+												console.log("Set active result:", setResult);
+												window.location.reload();
+											} else {
+												alert(
+													"Erro ao criar ambiente: " +
+														(error?.message || "desconhecido"),
+												);
+											}
+										} catch (err) {
+											console.error("Erro completo:", err);
+											alert("Erro ao criar ambiente. Verifique o console.");
+										}
+									}
+								}}
+							>
 								<Plus size={14} />
 								Novo Ambiente
 							</div>

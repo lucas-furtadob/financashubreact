@@ -7,7 +7,7 @@ import {
 } from "@tanstack/react-router";
 import { TanStackRouterDevtoolsPanel } from "@tanstack/react-router-devtools";
 import Layout from "../components/Layout";
-import PostHogProvider from "../integrations/posthog/provider";
+// import PostHogProvider from "../integrations/posthog/provider";
 
 import TanStackQueryDevtools from "../integrations/tanstack-query/devtools";
 import TanStackQueryProvider from "../integrations/tanstack-query/root-provider";
@@ -56,24 +56,24 @@ function RootDocument({ children }: { children: React.ReactNode }) {
 				<HeadContent />
 			</head>
 			<body className="font-sans antialiased [overflow-wrap:anywhere] selection:bg-[rgba(79,184,178,0.24)]">
-				<PostHogProvider>
-					<TanStackQueryProvider>
-						<Layout>{children}</Layout>
-						<TanStackDevtools
-							config={{
-								position: "bottom-right",
-							}}
-							plugins={[
-								{
-									name: "Tanstack Router",
-									render: <TanStackRouterDevtoolsPanel />,
-								},
-								TanStackQueryDevtools,
-								StoreDevtools,
-							]}
-						/>
-					</TanStackQueryProvider>
-				</PostHogProvider>
+				{/* <PostHogProvider> */}
+				<TanStackQueryProvider>
+					<Layout>{children}</Layout>
+					<TanStackDevtools
+						config={{
+							position: "bottom-right",
+						}}
+						plugins={[
+							{
+								name: "Tanstack Router",
+								render: <TanStackRouterDevtoolsPanel />,
+							},
+							TanStackQueryDevtools,
+							StoreDevtools,
+						]}
+					/>
+				</TanStackQueryProvider>
+				{/* </PostHogProvider> */}
 				<Scripts />
 			</body>
 		</html>
