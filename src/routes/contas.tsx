@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Pencil, Trash2 } from "lucide-react";
+import { Pencil, Plus, Trash2 } from "lucide-react";
 import { useState } from "react";
 import * as Select from "@/components/ui/select";
 import { CategoryIcon } from "@/lib/category-icons";
@@ -8,8 +8,10 @@ import {
 	formatCurrencyInput,
 	parseCurrency,
 } from "@/lib/formatters";
+import { ActionButton } from "../components/ds/ActionMenu";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
+import { PageActions } from "../components/ds/PageActions";
 import {
 	Table,
 	TableBody,
@@ -212,24 +214,14 @@ function ContasPage() {
 						Gerencie todos os seus saldos, instituições e carteiras.
 					</p>
 				</div>
-				<button
-					type="button"
-					onClick={() => openModal()}
-					style={{
-						background: "var(--accent)",
-						color: "#FFF",
-						border: "none",
-						padding: "10px 20px",
-						borderRadius: "8px",
-						fontWeight: 600,
-						cursor: "pointer",
-						display: "flex",
-						alignItems: "center",
-						gap: "8px",
-					}}
-				>
-					+ Nova Conta
-				</button>
+				<PageActions>
+					<ActionButton
+						icon={<Plus size={18} />}
+						label="Nova Conta"
+						onClick={() => openModal()}
+						variant="primary"
+					/>
+				</PageActions>
 			</header>
 
 			<div

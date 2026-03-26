@@ -1,5 +1,8 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
+import { Plus } from "lucide-react";
 import { useState } from "react";
+import { ActionButton } from "@/components/ds/ActionMenu";
+import { PageActions } from "@/components/ds/PageActions";
 
 export const Route = createFileRoute("/cartoes")({
 	component: CartoesPage,
@@ -129,34 +132,14 @@ function CartoesPage() {
 						Gerencie seus cartões, limites e faturas.
 					</p>
 				</div>
-				<button
-					onClick={() => openModal()}
-					style={{
-						background: "var(--accent)",
-						color: "#FFF",
-						border: "none",
-						padding: "10px 20px",
-						borderRadius: "8px",
-						fontWeight: 600,
-						cursor: "pointer",
-						display: "flex",
-						alignItems: "center",
-						gap: "8px",
-					}}
-				>
-					<span
-						style={{
-							width: "16px",
-							height: "16px",
-							display: "flex",
-							alignItems: "center",
-							justifyContent: "center",
-						}}
-					>
-						+
-					</span>
-					Novo Cartão
-				</button>
+				<PageActions>
+					<ActionButton
+						icon={<Plus size={18} />}
+						label="Novo Cartão"
+						onClick={() => openModal()}
+						variant="primary"
+					/>
+				</PageActions>
 			</header>
 
 			{/* Summary Cards */}
