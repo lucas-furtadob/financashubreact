@@ -17,6 +17,7 @@ export const auth = betterAuth({
 		"http://localhost:3008",
 		"http://localhost:3009",
 		"http://localhost:3011",
+		"https://financashubreact.vercel.app",
 	],
 	database: drizzleAdapter(db, {
 		provider: "pg",
