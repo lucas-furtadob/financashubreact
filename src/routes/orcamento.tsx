@@ -1,5 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { ActionButton } from "@/components/ds/ActionMenu";
+import { PageActions } from "@/components/ds/PageActions";
 import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
 import { CATEGORIAS, getCategoriasDespesas } from "@/lib/categorias";
@@ -290,46 +292,20 @@ function OrcamentoPage() {
 							setCurrentYear(year);
 						}}
 					/>
-				</div>
-				<div style={{ display: "flex", gap: "12px" }}>
-					<button
-						type="button"
-						onClick={() => setShowCopyModal(true)}
-						style={{
-							background: "transparent",
-							border: "1px solid var(--border)",
-							color: "var(--text-secondary)",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "8px",
-						}}
-					>
-						<CategoryIcon name="copy" size={16} />
-						Copiar orçamento
-					</button>
-					<button
-						type="button"
-						onClick={() => openModal()}
-						style={{
-							background: "var(--accent)",
-							border: "none",
-							color: "#FFF",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "8px",
-						}}
-					>
-						<CategoryIcon name="plus" size={16} />
-						Novo Orçamento
-					</button>
+					<PageActions>
+						<ActionButton
+							icon={<CategoryIcon name="copy" size={16} />}
+							label="Copiar orçamento"
+							onClick={() => setShowCopyModal(true)}
+							variant="secondary"
+						/>
+						<ActionButton
+							icon={<CategoryIcon name="plus" size={16} />}
+							label="Novo Orçamento"
+							onClick={() => openModal()}
+							variant="primary"
+						/>
+					</PageActions>
 				</div>
 			</header>
 
