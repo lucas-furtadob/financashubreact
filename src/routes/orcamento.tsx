@@ -1,5 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
+import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
 import { CATEGORIAS, getCategoriasDespesas } from "@/lib/categorias";
 import { CategoryIcon } from "@/lib/category-icons";
@@ -86,7 +87,7 @@ function formatPercent(value: number) {
 }
 
 function OrcamentoPage() {
-	const [currentYear] = useState(new Date().getFullYear());
+	const [currentYear, setCurrentYear] = useState(new Date().getFullYear());
 	const [currentMonth, setCurrentMonth] = useState(new Date().getMonth() + 1);
 	const [lancamentos] = useState(DEFAULT_LANCAMENTOS);
 	const [orcamentos, setOrcamentos] = useState(DEFAULT_ORCAMENTOS);
@@ -142,22 +143,6 @@ function OrcamentoPage() {
 	};
 
 	const getCategoriaById = (id: string) => CATEGORIAS.find((c) => c.id === id);
-
-	const handlePrevMonth = () => {
-		if (currentMonth === 1) {
-			setCurrentMonth(12);
-		} else {
-			setCurrentMonth(currentMonth - 1);
-		}
-	};
-
-	const handleNextMonth = () => {
-		if (currentMonth === 12) {
-			setCurrentMonth(1);
-		} else {
-			setCurrentMonth(currentMonth + 1);
-		}
-	};
 
 	const openModal = (id?: string) => {
 		if (id) {
@@ -297,60 +282,14 @@ function OrcamentoPage() {
 					</p>
 				</div>
 				<div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-					<button
-						type="button"
-						className="month-selector"
-						style={{
-							background: "transparent",
-							border: "1px solid var(--border)",
-							padding: "10px 16px",
-							borderRadius: "8px",
-							display: "flex",
-							alignItems: "center",
-							gap: "12px",
-							color: "#FFF",
-							cursor: "pointer",
+					<MonthSelector
+						month={currentMonth}
+						year={currentYear}
+						onMonthChange={(month, year) => {
+							setCurrentMonth(month);
+							setCurrentYear(year);
 						}}
-					>
-						<span
-							onClick={handlePrevMonth}
-							style={{
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-							}}
-						>
-							<CategoryIcon
-								name="chevron-left"
-								size={18}
-								style={{ color: "#6B6B70" }}
-							/>
-						</span>
-						<span
-							style={{
-								fontWeight: 600,
-								fontSize: "14px",
-								letterSpacing: "0.05em",
-								textTransform: "uppercase",
-							}}
-						>
-							{MESES[currentMonth - 1]} {currentYear}
-						</span>
-						<span
-							onClick={handleNextMonth}
-							style={{
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-							}}
-						>
-							<CategoryIcon
-								name="chevron-right"
-								size={18}
-								style={{ color: "#6B6B70" }}
-							/>
-						</span>
-					</button>
+					/>
 				</div>
 				<div style={{ display: "flex", gap: "12px" }}>
 					<button

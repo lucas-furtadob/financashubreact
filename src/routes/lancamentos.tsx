@@ -3,8 +3,6 @@ import {
 	ArrowDownLeft,
 	ArrowUpRight,
 	ChevronDown,
-	ChevronLeft,
-	ChevronRight,
 	DollarSign,
 	Download,
 	FileSpreadsheet,
@@ -15,6 +13,7 @@ import {
 	Upload,
 } from "lucide-react";
 import { useRef, useState } from "react";
+import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
 import { CategoryIcon } from "@/lib/category-icons";
 import {
@@ -145,7 +144,7 @@ function LancamentosPage() {
 	const [lancamentos, setLancamentos] =
 		useState<Lancamento[]>(MOCK_LANCAMENTOS);
 	const [currentMonth, setCurrentMonth] = useState(3);
-	const [currentYear] = useState(2026);
+	const [currentYear, setCurrentYear] = useState(2026);
 	const [filtroTipo, setFiltroTipo] = useState("todos");
 	const [showModal, setShowModal] = useState(false);
 	const [editingId, setEditingId] = useState<string | null>(null);
@@ -208,16 +207,6 @@ function LancamentosPage() {
 		.filter((l) => l.tipo === "despesa")
 		.reduce((sum, l) => sum + l.valor, 0);
 	const saldo = totalReceitas - totalDespesas;
-
-	const handlePrevMonth = () => {
-		if (currentMonth === 1) setCurrentMonth(12);
-		else setCurrentMonth(currentMonth - 1);
-	};
-
-	const handleNextMonth = () => {
-		if (currentMonth === 12) setCurrentMonth(1);
-		else setCurrentMonth(currentMonth + 1);
-	};
 
 	const openModal = (lanc?: Lancamento) => {
 		if (lanc) {
@@ -501,50 +490,14 @@ function LancamentosPage() {
 					</p>
 				</div>
 				<div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
-					<button
-						type="button"
-						className="month-selector"
-						style={{
-							background: "transparent",
-							border: "1px solid var(--border)",
-							padding: "10px 16px",
-							borderRadius: "8px",
-							display: "flex",
-							alignItems: "center",
-							gap: "12px",
-							color: "#FFF",
-							cursor: "pointer",
+					<MonthSelector
+						month={currentMonth}
+						year={currentYear}
+						onMonthChange={(month, year) => {
+							setCurrentMonth(month);
+							setCurrentYear(year);
 						}}
-					>
-						<span
-							onClick={handlePrevMonth}
-							role="button"
-							tabIndex={0}
-							onKeyDown={(e) => e.key === "Enter" && handlePrevMonth()}
-							style={{ cursor: "pointer", display: "flex" }}
-						>
-							<ChevronLeft size={18} />
-						</span>
-						<span
-							style={{
-								fontWeight: 600,
-								fontSize: "14px",
-								letterSpacing: "0.05em",
-								textTransform: "uppercase",
-							}}
-						>
-							{MESES[currentMonth - 1]} {currentYear}
-						</span>
-						<span
-							onClick={handleNextMonth}
-							role="button"
-							tabIndex={0}
-							onKeyDown={(e) => e.key === "Enter" && handleNextMonth()}
-							style={{ cursor: "pointer", display: "flex" }}
-						>
-							<ChevronRight size={18} />
-						</span>
-					</button>
+					/>
 					<div style={{ position: "relative" }}>
 						<button
 							type="button"

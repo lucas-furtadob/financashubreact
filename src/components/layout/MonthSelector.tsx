@@ -1,3 +1,5 @@
+import { ChevronLeft, ChevronRight } from "lucide-react";
+
 const MESES = [
 	"Janeiro",
 	"Fevereiro",
@@ -41,25 +43,68 @@ export function MonthSelector({
 	};
 
 	return (
-		<div className="month-selector">
+		<div
+			className="month-selector"
+			style={{
+				display: "flex",
+				alignItems: "center",
+				background: "var(--bg-card)",
+				border: "1px solid var(--border)",
+				borderRadius: "12px",
+				padding: "4px",
+				gap: "4px",
+			}}
+		>
 			<button
 				type="button"
-				className="month-selector-btn"
 				onClick={handlePrev}
 				aria-label="Mês anterior"
+				style={{
+					background: "transparent",
+					border: "none",
+					color: "var(--text-secondary)",
+					cursor: "pointer",
+					padding: "12px",
+					borderRadius: "8px",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					transition: "all 0.2s",
+				}}
 			>
-				‹
+				<ChevronLeft size={22} />
 			</button>
-			<span className="month-selector-value">
-				{MESES[month - 1]} {year}
-			</span>
+			<div
+				style={{
+					padding: "10px 20px",
+					fontWeight: 700,
+					fontSize: "16px",
+					letterSpacing: "0.02em",
+					color: "#FFF",
+					minWidth: "180px",
+					textAlign: "center",
+				}}
+			>
+				{MESES[month - 1].toUpperCase()} {year}
+			</div>
 			<button
 				type="button"
-				className="month-selector-btn"
 				onClick={handleNext}
 				aria-label="Próximo mês"
+				style={{
+					background: "transparent",
+					border: "none",
+					color: "var(--text-secondary)",
+					cursor: "pointer",
+					padding: "12px",
+					borderRadius: "8px",
+					display: "flex",
+					alignItems: "center",
+					justifyContent: "center",
+					transition: "all 0.2s",
+				}}
 			>
-				›
+				<ChevronRight size={22} />
 			</button>
 		</div>
 	);
