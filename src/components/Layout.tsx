@@ -3,19 +3,21 @@ import {
 	ArrowRightLeft,
 	BarChart3,
 	Briefcase,
+	Building2,
 	CalendarRange,
 	ChevronDown,
 	CreditCard,
+	FolderTree,
 	HelpCircle,
 	LayoutDashboard,
 	LayoutGrid,
 	LogOut,
 	Moon,
+	Plus,
 	Settings,
 	Sun,
+	Tags,
 	Wallet,
-	Building2,
-    Plus,
 } from "lucide-react";
 import { useState } from "react";
 import { authClient } from "#/lib/auth-client";
@@ -41,29 +43,22 @@ const navItems = [
 		hasSubmenu: true,
 		submenu: ["Objetivos", { label: "Orçamento Mensal", href: "/orcamento" }],
 	},
-	{ icon: BarChart3, label: "Relatórios", href: "#" },
-	{
-		label: "Cadastros",
-		icon: LayoutGrid,
-		hasSubmenu: true,
-		submenu: [
-			{ label: "Categorias", href: "/categorias" },
-			{ label: "Tags", href: "/tags" },
-		],
-	},
+	{ icon: BarChart3, label: "Relatórios", href: "/lancamentos" },
+	{ icon: FolderTree, label: "Categorias", href: "/categorias" },
+	{ icon: Tags, label: "Tags", href: "/tags" },
 ];
 
 export default function Layout({ children }: LayoutProps) {
 	const [collapsed, setCollapsed] = useState(false);
 	const [darkMode, setDarkMode] = useState(true);
 	const [openSubmenus, setOpenSubmenus] = useState<Record<string, boolean>>({});
-    const [showOrgSelect, setShowOrgSelect] = useState(false);
+	const [showOrgSelect, setShowOrgSelect] = useState(false);
 	const location = useLocation();
-    const navigate = useNavigate();
+	const navigate = useNavigate();
 
-    const { data: session } = authClient.useSession();
-    const { data: activeOrg } = authClient.useActiveOrganization();
-    const { data: userOrgs } = authClient.useListOrganizations();
+	const { data: session } = authClient.useSession();
+	const { data: activeOrg } = authClient.useActiveOrganization();
+	const { data: userOrgs } = authClient.useListOrganizations();
 
 	const toggleSubmenu = (label: string) => {
 		setOpenSubmenus((prev) => ({ ...prev, [label]: !prev[label] }));
@@ -74,21 +69,22 @@ export default function Layout({ children }: LayoutProps) {
 		document.body.classList.toggle("light-theme", !darkMode);
 	};
 
-    const handleLogout = async () => {
-        await authClient.signOut();
-        navigate({ to: "/login" });
-    };
+	const handleLogout = async () => {
+		await authClient.signOut();
+		navigate({ to: "/login" });
+	};
 
 	const isActive = (href: string) => {
 		if (href === "/") return location.pathname === "/";
 		return location.pathname.startsWith(href);
 	};
 
-    const isAuthPage = location.pathname === "/login" || location.pathname === "/signup";
+	const isAuthPage =
+		location.pathname === "/login" || location.pathname === "/signup";
 
-    if (isAuthPage) {
-        return <main className="w-full">{children}</main>;
-    }
+	if (isAuthPage) {
+		return <main className="w-full">{children}</main>;
+	}
 
 	return (
 		<>
@@ -107,54 +103,63 @@ export default function Layout({ children }: LayoutProps) {
 				</div>
 
 				<div className="user-profile">
-					<div className="avatar">
-                        {session?.user?.name?.charAt(0) || "U"}
-                    </div>
+					<div className="avatar">{session?.user?.name?.charAt(0) || "U"}</div>
 					<div className="user-info">
-						<span className="user-name">{session?.user?.name || "Usuário"}</span>
-						<span className="user-email text-[10px] opacity-70">{session?.user?.email}</span>
+						<span className="user-name">
+							{session?.user?.name || "Usuário"}
+						</span>
+						<span className="user-email text-[10px] opacity-70">
+							{session?.user?.email}
+						</span>
 					</div>
 				</div>
 
-                {/* Seletor de Organização (Ambiente) */}
-                <div className="px-4 mb-4">
-                    <div 
-                        className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
-                        onClick={() => setShowOrgSelect(!showOrgSelect)}
-                    >
-                        <Building2 size={16} className="text-teal-400" />
-                        {!collapsed && (
-                            <div className="flex-1 overflow-hidden">
-                                <span className="block text-xs font-medium truncate">
-                                    {activeOrg?.name || "Selecionar Ambiente"}
-                                </span>
-                            </div>
-                        )}
-                        {!collapsed && <ChevronDown size={14} className={`transition-transform ${showOrgSelect ? 'rotate-180' : ''}`} />}
-                    </div>
+				{/* Seletor de Organização (Ambiente) */}
+				<div className="px-4 mb-4">
+					<div
+						className="flex items-center gap-2 p-2 rounded-lg bg-white/5 border border-white/10 cursor-pointer hover:bg-white/10 transition-colors"
+						onClick={() => setShowOrgSelect(!showOrgSelect)}
+					>
+						<Building2 size={16} className="text-teal-400" />
+						{!collapsed && (
+							<div className="flex-1 overflow-hidden">
+								<span className="block text-xs font-medium truncate">
+									{activeOrg?.name || "Selecionar Ambiente"}
+								</span>
+							</div>
+						)}
+						{!collapsed && (
+							<ChevronDown
+								size={14}
+								className={`transition-transform ${showOrgSelect ? "rotate-180" : ""}`}
+							/>
+						)}
+					</div>
 
-                    {showOrgSelect && !collapsed && (
-                        <div className="mt-1 p-1 rounded-lg bg-[#1a2234] border border-white/10 shadow-xl space-y-1">
-                            {userOrgs?.map((org) => (
-                                <div 
-                                    key={org.id} 
-                                    className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 ${activeOrg?.id === org.id ? 'text-teal-400 font-bold' : 'text-slate-300'}`}
-                                    onClick={async () => {
-                                        await authClient.organization.setActive({ organizationId: org.id });
-                                        setShowOrgSelect(false);
-                                    }}
-                                >
-                                    <div className="w-1.5 h-1.5 rounded-full bg-current" />
-                                    {org.name}
-                                </div>
-                            ))}
-                            <div className="flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 text-slate-400 border-t border-white/5 mt-1">
-                                <Plus size={14} />
-                                Novo Ambiente
-                            </div>
-                        </div>
-                    )}
-                </div>
+					{showOrgSelect && !collapsed && (
+						<div className="mt-1 p-1 rounded-lg bg-[#1a2234] border border-white/10 shadow-xl space-y-1">
+							{userOrgs?.map((org) => (
+								<div
+									key={org.id}
+									className={`flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 ${activeOrg?.id === org.id ? "text-teal-400 font-bold" : "text-slate-300"}`}
+									onClick={async () => {
+										await authClient.organization.setActive({
+											organizationId: org.id,
+										});
+										setShowOrgSelect(false);
+									}}
+								>
+									<div className="w-1.5 h-1.5 rounded-full bg-current" />
+									{org.name}
+								</div>
+							))}
+							<div className="flex items-center gap-2 p-2 rounded text-xs cursor-pointer hover:bg-white/5 text-slate-400 border-t border-white/5 mt-1">
+								<Plus size={14} />
+								Novo Ambiente
+							</div>
+						</div>
+					)}
+				</div>
 
 				<nav className="nav-menu">
 					<div className="nav-label">MENU</div>
