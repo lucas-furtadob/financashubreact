@@ -2,7 +2,6 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
-	ChevronDown,
 	DollarSign,
 	Download,
 	FileSpreadsheet,
@@ -31,9 +30,11 @@ import {
 	parseCSV,
 	parseOFX,
 } from "@/lib/import-export";
-import { Input } from "../components/ds";
+import { ActionButton, ActionMenu } from "../components/ds/ActionMenu";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
+import { FilterPill, FilterPills } from "../components/ds/FilterPills";
+import { PageActions } from "../components/ds/PageActions";
 import {
 	Table,
 	TableBody,
@@ -489,7 +490,7 @@ function LancamentosPage() {
 						Gerencie suas receitas e despesas
 					</p>
 				</div>
-				<div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+				<PageActions>
 					<MonthSelector
 						month={currentMonth}
 						year={currentYear}
@@ -498,129 +499,42 @@ function LancamentosPage() {
 							setCurrentYear(year);
 						}}
 					/>
-					<button
-						type="button"
+					<ActionButton
+						icon={<Plus size={18} />}
+						label="Novo lançamento"
 						onClick={() => openModal()}
-						style={{
-							background: "var(--accent)",
-							color: "#FFF",
-							border: "none",
-							padding: "10px 20px",
-							borderRadius: "8px",
-							fontWeight: 600,
-							fontSize: "14px",
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "8px",
-						}}
-					>
-						<Plus size={18} />
-						Novo lançamento
-					</button>
-					<button
-						type="button"
+						variant="primary"
+					/>
+					<ActionButton
+						icon={<Upload size={16} />}
+						label="Importar"
 						onClick={() => setShowImportModal(true)}
-						style={{
-							background: "transparent",
-							border: "1px solid var(--border)",
-							padding: "8px 14px",
-							borderRadius: "8px",
-							fontWeight: 500,
-							fontSize: "13px",
-							cursor: "pointer",
-							display: "flex",
-							alignItems: "center",
-							gap: "6px",
-							color: "var(--text-secondary)",
-						}}
-					>
-						<Upload size={16} />
-						Importar
-					</button>
-					<div style={{ position: "relative" }}>
-						<button
-							type="button"
-							onClick={() => setShowExportMenu(!showExportMenu)}
-							style={{
-								background: "transparent",
-								border: "1px solid var(--border)",
-								padding: "8px 14px",
-								borderRadius: "8px",
-								fontWeight: 500,
-								fontSize: "13px",
-								cursor: "pointer",
-								display: "flex",
-								alignItems: "center",
-								gap: "6px",
-								color: "var(--text-secondary)",
-							}}
-						>
-							<Download size={16} />
-							Exportar
-							<ChevronDown size={14} />
-						</button>
-						{showExportMenu && (
-							<div
-								style={{
-									position: "absolute",
-									top: "100%",
-									right: 0,
-									marginTop: "8px",
-									background: "var(--bg-card)",
-									border: "1px solid var(--border)",
-									borderRadius: "8px",
-									padding: "8px",
-									minWidth: "160px",
-									zIndex: 100,
-								}}
-							>
-								<button
-									type="button"
-									onClick={() => handleExport("csv")}
-									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "8px",
-										width: "100%",
-										padding: "10px 12px",
-										background: "transparent",
-										border: "none",
-										color: "#FFF",
-										cursor: "pointer",
-										borderRadius: "6px",
-										textAlign: "left",
-										fontSize: "13px",
-									}}
-								>
-									<FileText size={16} />
-									Exportar CSV
-								</button>
-								<button
-									type="button"
-									onClick={() => handleExport("xls")}
-									style={{
-										display: "flex",
-										alignItems: "center",
-										gap: "8px",
-										width: "100%",
-										padding: "10px 12px",
-										background: "transparent",
-										border: "none",
-										color: "#FFF",
-										cursor: "pointer",
-										borderRadius: "6px",
-										textAlign: "left",
-										fontSize: "13px",
-									}}
-								>
-									<FileSpreadsheet size={16} />
-									Exportar Excel
-								</button>
-							</div>
-						)}
-					</div>
-				</div>
+						variant="secondary"
+						size="sm"
+					/>
+					<ActionMenu
+						trigger={
+							<ActionButton
+								icon={<Download size={16} />}
+								label="Exportar"
+								variant="secondary"
+								size="sm"
+							/>
+						}
+						items={[
+							{
+								label: "Exportar CSV",
+								onClick: () => handleExport("csv"),
+								icon: <FileText size={16} />,
+							},
+							{
+								label: "Exportar Excel",
+								onClick: () => handleExport("xls"),
+								icon: <FileSpreadsheet size={16} />,
+							},
+						]}
+					/>
+				</PageActions>
 			</header>
 
 			{/* Summary Cards */}
@@ -777,32 +691,26 @@ function LancamentosPage() {
 			</div>
 
 			{/* Filter Pills */}
-			<div style={{ display: "flex", gap: "8px", marginBottom: "24px" }}>
-				{["todos", "receita", "despesa"].map((tipo) => (
-					<button
-						type="button"
-						key={tipo}
-						onClick={() => setFiltroTipo(tipo)}
-						style={{
-							padding: "6px 16px",
-							borderRadius: "100px",
-							fontSize: "13px",
-							cursor: "pointer",
-							background:
-								filtroTipo === tipo ? "var(--accent)" : "var(--bg-card)",
-							color: filtroTipo === tipo ? "#FFF" : "var(--text-secondary)",
-							border: "1px solid var(--border)",
-							textTransform: "capitalize",
-						}}
-					>
-						{tipo === "todos"
-							? "Todos"
-							: tipo === "receita"
-								? "Receitas"
-								: "Despesas"}
-					</button>
-				))}
-			</div>
+			<FilterPills>
+				<FilterPill
+					active={filtroTipo === "todos"}
+					onClick={() => setFiltroTipo("todos")}
+				>
+					Todos
+				</FilterPill>
+				<FilterPill
+					active={filtroTipo === "receita"}
+					onClick={() => setFiltroTipo("receita")}
+				>
+					Receitas
+				</FilterPill>
+				<FilterPill
+					active={filtroTipo === "despesa"}
+					onClick={() => setFiltroTipo("despesa")}
+				>
+					Despesas
+				</FilterPill>
+			</FilterPills>
 
 			<Card padding="none">
 				<Table scroll>
