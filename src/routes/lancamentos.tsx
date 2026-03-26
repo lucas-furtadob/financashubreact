@@ -2,13 +2,19 @@ import { createFileRoute } from "@tanstack/react-router";
 import {
 	ArrowDownLeft,
 	ArrowUpRight,
+	ChevronDown,
 	ChevronLeft,
 	ChevronRight,
 	DollarSign,
+	Download,
+	FileSpreadsheet,
+	FileText,
 	Pencil,
+	Plus,
 	Trash2,
+	Upload,
 } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import * as Select from "@/components/ui/select";
 import { CategoryIcon } from "@/lib/category-icons";
 import {
@@ -17,6 +23,16 @@ import {
 	formatDateInput,
 	parseCurrency,
 } from "@/lib/formatters";
+import {
+	downloadTemplate,
+	exportToCSV,
+	exportToXLS,
+	formatFileSize,
+	type ParsedCSV,
+	parseCSV,
+	parseOFX,
+} from "@/lib/import-export";
+import { Input } from "../components/ds";
 import { Button } from "../components/ds/Button";
 import { Card } from "../components/ds/Card";
 import {
@@ -28,7 +44,6 @@ import {
 	TableHeader,
 	TableRow,
 } from "../components/ds/Table";
-import { Input } from "../components/ds";
 
 export const Route = createFileRoute("/lancamentos")({
 	component: LancamentosPage,
@@ -113,6 +128,19 @@ const CONTAS = [
 	{ id: "bb", nome: "Banco do Brasil" },
 ];
 
+interface ImportRow {
+	data: string;
+	titulo: string;
+	categoria: string;
+	valor: number;
+	valorStr: string;
+	tipo: "receita" | "despesa";
+	tag: string;
+	formaPagamento: string;
+	ignored: boolean;
+	errors: string[];
+}
+
 function LancamentosPage() {
 	const [lancamentos, setLancamentos] =
 		useState<Lancamento[]>(MOCK_LANCAMENTOS);
@@ -137,6 +165,18 @@ function LancamentosPage() {
 	}>({});
 	const [showDeleteModal, setShowDeleteModal] = useState(false);
 	const [deleteId, setDeleteId] = useState<string | null>(null);
+
+	const [showImportModal, setShowImportModal] = useState(false);
+	const [importStep, setImportStep] = useState(1);
+	const [importFile, setImportFile] = useState<File | null>(null);
+	const [importAccount, setImportAccount] = useState("");
+	const [parsedData, setParsedData] = useState<ParsedCSV | null>(null);
+	const [importMapping, setImportMapping] = useState<Record<string, string>>(
+		{},
+	);
+	const [validatedRows, setValidatedRows] = useState<ImportRow[]>([]);
+	const [showExportMenu, setShowExportMenu] = useState(false);
+	const fileInputRef = useRef<HTMLInputElement>(null);
 
 	const filteredLancamentos = lancamentos.filter((l) => {
 		if (filtroTipo === "todos") return true;
@@ -270,6 +310,170 @@ function LancamentosPage() {
 		setDeleteId(null);
 	};
 
+	const handleExport = (format: "csv" | "xls") => {
+		setShowExportMenu(false);
+		const headers = [
+			"Data",
+			"Descrição",
+			"Categoria",
+			"Conta",
+			"Status",
+			"Tipo",
+			"Valor",
+		];
+		const rows = lancamentos.map((l) => [
+			l.data,
+			l.descricao,
+			l.categoria,
+			l.conta || "",
+			l.status,
+			l.tipo,
+			l.valor,
+		]);
+		const filename = `lancamentos_${MESES[currentMonth - 1].toLowerCase()}_${currentYear}.${format}`;
+		if (format === "csv") {
+			exportToCSV(headers, rows, filename);
+		} else {
+			exportToXLS(headers, rows, filename);
+		}
+	};
+
+	const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+		const file = e.target.files?.[0];
+		if (!file) return;
+		setImportFile(file);
+		const reader = new FileReader();
+		reader.onload = (ev) => {
+			const content = ev.target?.result as string;
+			const isOFX =
+				file.name.toLowerCase().endsWith(".ofx") ||
+				file.name.toLowerCase().endsWith(".qfx");
+			if (isOFX) {
+				const ofxData = parseOFX(content);
+				const rows: ImportRow[] = ofxData.map((t) => ({
+					data: t.data,
+					titulo: t.titulo,
+					categoria: "",
+					valor: t.valor,
+					valorStr: formatCurrency(t.valor),
+					tipo: t.tipo,
+					tag: "",
+					formaPagamento: "",
+					ignored: false,
+					errors: [],
+				}));
+				setValidatedRows(rows);
+				setImportStep(2);
+			} else {
+				const parsed = parseCSV(content);
+				setParsedData(parsed);
+				const autoMapping: Record<string, string> = {};
+				parsed.headers.forEach((header, idx) => {
+					const h = header.toLowerCase();
+					if (h.includes("data") || h.includes("date"))
+						autoMapping["data"] = String(idx);
+					else if (
+						h.includes("titulo") ||
+						h.includes("title") ||
+						h.includes("descricao") ||
+						h.includes("nome")
+					)
+						autoMapping["titulo"] = String(idx);
+					else if (
+						h.includes("valor") ||
+						h.includes("value") ||
+						h.includes("amount")
+					)
+						autoMapping["valor"] = String(idx);
+					else if (h.includes("categoria") || h.includes("category"))
+						autoMapping["categoria"] = String(idx);
+				});
+				setImportMapping(autoMapping);
+				setImportStep(2);
+			}
+		};
+		reader.readAsText(file);
+	};
+
+	const validateImport = () => {
+		if (!parsedData) return;
+		const rows: ImportRow[] = parsedData.rows.map((row) => {
+			const dataIdx = parseInt(importMapping["data"] || "-1");
+			const tituloIdx = parseInt(importMapping["titulo"] || "-1");
+			const valorIdx = parseInt(importMapping["valor"] || "-1");
+			const categoriaIdx = parseInt(importMapping["categoria"] || "-1");
+
+			const data = dataIdx >= 0 ? row[dataIdx] : "";
+			const titulo = tituloIdx >= 0 ? row[tituloIdx] : "";
+			const valorStr = valorIdx >= 0 ? row[valorIdx] : "0";
+			const categoria = categoriaIdx >= 0 ? row[categoriaIdx] : "";
+
+			const valorNum = parseCurrency(valorStr.replace(/[R$\s]/g, ""));
+			const tipo = valorNum < 0 ? "despesa" : "receita";
+			const valorAbs = Math.abs(valorNum);
+
+			return {
+				data,
+				titulo,
+				categoria,
+				valor: valorAbs,
+				valorStr: formatCurrency(valorAbs),
+				tipo,
+				tag: "",
+				formaPagamento: "",
+				ignored: false,
+				errors:
+					!data || !titulo || !valorAbs ? ["Campos obrigatórios faltando"] : [],
+			};
+		});
+		setValidatedRows(rows);
+		setImportStep(3);
+	};
+
+	const executeImport = () => {
+		const validRows = validatedRows.filter(
+			(r) => !r.ignored && r.errors.length === 0,
+		);
+		const newLancamentos: Lancamento[] = validRows.map((r) => ({
+			id: `lanc_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+			data: r.data,
+			descricao: r.titulo,
+			categoria: r.categoria,
+			status: r.tipo === "receita" ? "Recebido" : "Pago",
+			valor: r.valor,
+			tipo: r.tipo,
+			conta: importAccount,
+		}));
+		setLancamentos([...lancamentos, ...newLancamentos]);
+		closeImportModal();
+	};
+
+	const closeImportModal = () => {
+		setShowImportModal(false);
+		setImportStep(1);
+		setImportFile(null);
+		setImportAccount("");
+		setParsedData(null);
+		setImportMapping({});
+		setValidatedRows([]);
+	};
+
+	const toggleRowIgnored = (idx: number) => {
+		const newRows = [...validatedRows];
+		newRows[idx].ignored = !newRows[idx].ignored;
+		setValidatedRows(newRows);
+	};
+
+	const updateRowField = (
+		idx: number,
+		field: keyof ImportRow,
+		value: string,
+	) => {
+		const newRows = [...validatedRows];
+		(newRows[idx] as Record<string, unknown>)[field] = value;
+		setValidatedRows(newRows);
+	};
+
 	return (
 		<main
 			style={{
@@ -341,6 +545,106 @@ function LancamentosPage() {
 							<ChevronRight size={18} />
 						</span>
 					</button>
+					<div style={{ position: "relative" }}>
+						<button
+							type="button"
+							onClick={() => setShowExportMenu(!showExportMenu)}
+							style={{
+								background: "transparent",
+								border: "1px solid var(--border)",
+								padding: "10px 16px",
+								borderRadius: "8px",
+								fontWeight: 600,
+								cursor: "pointer",
+								display: "flex",
+								alignItems: "center",
+								gap: "8px",
+								color: "#FFF",
+							}}
+						>
+							<Download size={18} />
+							Exportar
+							<ChevronDown size={16} />
+						</button>
+						{showExportMenu && (
+							<div
+								style={{
+									position: "absolute",
+									top: "100%",
+									right: 0,
+									marginTop: "8px",
+									background: "var(--bg-card)",
+									border: "1px solid var(--border)",
+									borderRadius: "8px",
+									padding: "8px",
+									minWidth: "160px",
+									zIndex: 100,
+								}}
+							>
+								<button
+									type="button"
+									onClick={() => handleExport("csv")}
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: "8px",
+										width: "100%",
+										padding: "10px 12px",
+										background: "transparent",
+										border: "none",
+										color: "#FFF",
+										cursor: "pointer",
+										borderRadius: "6px",
+										textAlign: "left",
+									}}
+								>
+									<FileText size={16} />
+									Exportar CSV
+								</button>
+								<button
+									type="button"
+									onClick={() => handleExport("xls")}
+									style={{
+										display: "flex",
+										alignItems: "center",
+										gap: "8px",
+										width: "100%",
+										padding: "10px 12px",
+										background: "transparent",
+										border: "none",
+										color: "#FFF",
+										cursor: "pointer",
+										borderRadius: "6px",
+										textAlign: "left",
+									}}
+								>
+									<FileSpreadsheet size={16} />
+									Exportar Excel
+								</button>
+							</div>
+						)}
+					</div>
+					<button
+						type="button"
+						onClick={() => {
+							downloadTemplate();
+						}}
+						style={{
+							background: "transparent",
+							border: "1px solid var(--border)",
+							padding: "10px 16px",
+							borderRadius: "8px",
+							fontWeight: 600,
+							cursor: "pointer",
+							display: "flex",
+							alignItems: "center",
+							gap: "8px",
+							color: "#FFF",
+						}}
+					>
+						<Upload size={18} />
+						Importar
+					</button>
 					<button
 						type="button"
 						onClick={() => openModal()}
@@ -357,7 +661,8 @@ function LancamentosPage() {
 							gap: "8px",
 						}}
 					>
-						+ Novo Lançamento
+						<Plus size={18} />
+						Novo
 					</button>
 				</div>
 			</header>
@@ -958,29 +1263,48 @@ function LancamentosPage() {
 									>
 										Conta
 									</label>
-									<select
-										id="lanc-conta"
+									<Select.Select
 										value={conta}
-										onChange={(e) => setConta(e.target.value)}
-										style={{
-											width: "100%",
-											background: "#0A0A0B",
-											border: "1px solid var(--border)",
-											borderRadius: "12px",
-											height: "52px",
-											color: "#FFF",
-											padding: "0 16px",
-											fontSize: "15px",
-											cursor: "pointer",
-										}}
+										onValueChange={(value) => setConta(value)}
 									>
-										<option value="">Selecione...</option>
-										{CONTAS.map((c) => (
-											<option key={c.id} value={c.nome}>
-												{c.nome}
-											</option>
-										))}
-									</select>
+										<Select.SelectTrigger
+											style={{
+												width: "100%",
+												background: "#0A0A0B",
+												border: "1px solid var(--border)",
+												borderRadius: "12px",
+												height: "52px",
+												color: "#FFF",
+												fontSize: "15px",
+												outline: "none",
+												display: "flex",
+												alignItems: "center",
+											}}
+										>
+											<Select.SelectValue placeholder="Selecione..." />
+										</Select.SelectTrigger>
+										<Select.SelectContent
+											style={{
+												background: "var(--bg-card)",
+												border: "1px solid var(--border)",
+												borderRadius: "12px",
+											}}
+										>
+											{CONTAS.map((c) => (
+												<Select.SelectItem
+													key={c.id}
+													value={c.nome}
+													style={{
+														color: "#FFF",
+														padding: "10px 12px",
+														borderRadius: "8px",
+													}}
+												>
+													{c.nome}
+												</Select.SelectItem>
+											))}
+										</Select.SelectContent>
+									</Select.Select>
 								</div>
 							</div>
 						</div>
@@ -1027,7 +1351,9 @@ function LancamentosPage() {
 						zIndex: 1000,
 					}}
 					onKeyDown={(e) => e.key === "Escape" && setShowDeleteModal(false)}
-					onClick={(e) => e.target === e.currentTarget && setShowDeleteModal(false)}
+					onClick={(e) =>
+						e.target === e.currentTarget && setShowDeleteModal(false)
+					}
 				>
 					<div
 						style={{
@@ -1077,7 +1403,9 @@ function LancamentosPage() {
 						>
 							Esta ação não pode ser desfeita.
 						</p>
-						<div style={{ display: "flex", gap: "12px", justifyContent: "center" }}>
+						<div
+							style={{ display: "flex", gap: "12px", justifyContent: "center" }}
+						>
 							<Button variant="ghost" onClick={() => setShowDeleteModal(false)}>
 								Cancelar
 							</Button>
@@ -1088,6 +1416,589 @@ function LancamentosPage() {
 							>
 								Excluir
 							</Button>
+						</div>
+					</div>
+				</div>
+			)}
+
+			{showImportModal && (
+				<div
+					style={{
+						position: "fixed",
+						top: 0,
+						left: 0,
+						right: 0,
+						bottom: 0,
+						background: "rgba(0,0,0,0.7)",
+						backdropFilter: "blur(4px)",
+						display: "flex",
+						alignItems: "center",
+						justifyContent: "center",
+						zIndex: 1000,
+					}}
+					onKeyDown={(e) => e.key === "Escape" && closeImportModal()}
+					onClick={(e) => e.target === e.currentTarget && closeImportModal()}
+				>
+					<div
+						style={{
+							background: "var(--bg-card)",
+							border: "1px solid var(--border)",
+							borderRadius: "20px",
+							maxWidth: "700px",
+							width: "100%",
+							maxHeight: "90vh",
+							overflow: "auto",
+						}}
+					>
+						<div
+							style={{
+								padding: "28px",
+								display: "flex",
+								justifyContent: "space-between",
+								alignItems: "flex-start",
+								borderBottom: "1px solid var(--border)",
+							}}
+						>
+							<div>
+								<h2 style={{ fontSize: "20px", fontWeight: 700, margin: 0 }}>
+									Importar Lançamentos
+								</h2>
+								<p
+									style={{
+										color: "var(--text-muted)",
+										fontSize: "13px",
+										marginTop: "4px",
+									}}
+								>
+									{importStep === 1 && "Selecione o arquivo para importar"}
+									{importStep === 2 && "Mapeie as colunas do arquivo"}
+									{importStep === 3 && "Revise e confirme a importação"}
+								</p>
+							</div>
+							<button
+								type="button"
+								onClick={closeImportModal}
+								style={{
+									background: "#1F1F23",
+									border: "1px solid #2A2A2E",
+									width: "32px",
+									height: "32px",
+									borderRadius: "8px",
+									color: "var(--text-secondary)",
+									cursor: "pointer",
+								}}
+							>
+								✕
+							</button>
+						</div>
+
+						<div style={{ padding: "28px" }}>
+							{importStep === 1 && (
+								<div>
+									<div style={{ marginBottom: "24px" }}>
+										<label
+											style={{
+												display: "block",
+												fontSize: "13px",
+												fontWeight: 500,
+												color: "var(--text-secondary)",
+												marginBottom: "8px",
+											}}
+										>
+											Conta *
+										</label>
+										<Select.Select
+											value={importAccount}
+											onValueChange={setImportAccount}
+										>
+											<Select.SelectTrigger
+												style={{
+													background: "#0A0A0B",
+													border: "1px solid var(--border)",
+													borderRadius: "12px",
+													height: "52px",
+													color: "#FFF",
+													fontSize: "15px",
+												}}
+											>
+												<Select.SelectValue placeholder="Selecione uma conta..." />
+											</Select.SelectTrigger>
+											<Select.SelectContent
+												style={{
+													background: "var(--bg-card)",
+													border: "1px solid var(--border)",
+													borderRadius: "12px",
+												}}
+											>
+												{CONTAS.map((c) => (
+													<Select.SelectItem
+														key={c.id}
+														value={c.nome}
+														style={{
+															color: "#FFF",
+															padding: "10px 12px",
+															borderRadius: "8px",
+														}}
+													>
+														{c.nome}
+													</Select.SelectItem>
+												))}
+											</Select.SelectContent>
+										</Select.Select>
+									</div>
+
+									<div style={{ marginBottom: "24px" }}>
+										<label
+											htmlFor="import-file-input"
+											style={{
+												display: "block",
+												fontSize: "13px",
+												fontWeight: 500,
+												color: "var(--text-secondary)",
+												marginBottom: "8px",
+											}}
+										>
+											Arquivo (CSV ou OFX) *
+										</label>
+										<div
+											style={{
+												border: "2px dashed var(--border)",
+												borderRadius: "12px",
+												padding: "40px",
+												textAlign: "center",
+												cursor: "pointer",
+												transition: "border-color 0.2s",
+											}}
+											role="button"
+											tabIndex={0}
+											onClick={() => fileInputRef.current?.click()}
+											onKeyDown={(e) =>
+												e.key === "Enter" && fileInputRef.current?.click()
+											}
+										>
+											<input
+												id="import-file-input"
+												ref={fileInputRef}
+												type="file"
+												accept=".csv,.ofx,.qfx"
+												onChange={handleFileSelect}
+												style={{ display: "none" }}
+											></input>
+											<Upload
+												size={48}
+												style={{
+													color: "var(--text-muted)",
+													marginBottom: "16px",
+												}}
+											/>
+											<p
+												style={{
+													color: "#FFF",
+													fontSize: "15px",
+													marginBottom: "8px",
+												}}
+											>
+												{importFile
+													? importFile.name
+													: "Clique ou arraste o arquivo"}
+											</p>
+											{importFile && (
+												<p
+													style={{
+														color: "var(--text-muted)",
+														fontSize: "13px",
+													}}
+												>
+													{formatFileSize(importFile.size)}
+												</p>
+											)}
+										</div>
+									</div>
+
+									<p
+										style={{
+											color: "var(--text-muted)",
+											fontSize: "12px",
+											marginTop: "16px",
+										}}
+									>
+										Formatos suportados: CSV (separado por ; ou ,), OFX/QFX
+										(extrato bancário)
+									</p>
+								</div>
+							)}
+
+							{importStep === 2 && parsedData && (
+								<div>
+									<div style={{ marginBottom: "24px" }}>
+										<p
+											style={{
+												color: "var(--text-muted)",
+												fontSize: "13px",
+												marginBottom: "16px",
+											}}
+										>
+											Corresponda as colunas do seu arquivo com os campos do
+											sistema:
+										</p>
+										<div
+											style={{
+												display: "grid",
+												gridTemplateColumns: "1fr 1fr",
+												gap: "16px",
+											}}
+										>
+											{[
+												{ key: "data", label: "Data", required: true },
+												{ key: "titulo", label: "Título", required: true },
+												{ key: "valor", label: "Valor", required: true },
+												{
+													key: "categoria",
+													label: "Categoria",
+													required: false,
+												},
+											].map((field) => (
+												<div key={field.key}>
+													<label
+														style={{
+															display: "block",
+															fontSize: "12px",
+															fontWeight: 500,
+															color: "var(--text-secondary)",
+															marginBottom: "6px",
+														}}
+													>
+														{field.label}{" "}
+														{field.required && (
+															<span style={{ color: "#EF4444" }}>*</span>
+														)}
+													</label>
+													<select
+														value={importMapping[field.key] || ""}
+														onChange={(e) =>
+															setImportMapping({
+																...importMapping,
+																[field.key]: e.target.value,
+															})
+														}
+														style={{
+															width: "100%",
+															padding: "10px 12px",
+															background: "#1F1F23",
+															border: "1px solid #2D2D30",
+															borderRadius: "8px",
+															color: "#FFF",
+															fontSize: "13px",
+														}}
+													>
+														<option value="">Selecionar...</option>
+														{parsedData.headers.map((h, idx) => (
+															<option key={idx} value={String(idx)}>
+																{h.substring(0, 25)}
+															</option>
+														))}
+													</select>
+												</div>
+											))}
+										</div>
+									</div>
+									<Button
+										variant="primary"
+										onClick={validateImport}
+										style={{ background: "var(--accent)", color: "#FFF" }}
+									>
+										Validar Dados
+									</Button>
+								</div>
+							)}
+
+							{importStep === 2 && !parsedData && (
+								<div style={{ textAlign: "center", padding: "40px" }}>
+									<p
+										style={{ color: "var(--text-muted)", marginBottom: "16px" }}
+									>
+										Arquivo OFX importado.
+									</p>
+									<Button
+										variant="primary"
+										onClick={validateImport}
+										style={{ background: "var(--accent)", color: "#FFF" }}
+									>
+										Revisar Dados ({validatedRows.length} registros)
+									</Button>
+								</div>
+							)}
+
+							{importStep === 3 && (
+								<div>
+									<div
+										style={{
+											marginBottom: "24px",
+											display: "flex",
+											gap: "24px",
+										}}
+									>
+										<div
+											style={{
+												flex: 1,
+												padding: "16px",
+												background: "#1F1F23",
+												borderRadius: "8px",
+											}}
+										>
+											<p
+												style={{
+													color: "var(--text-muted)",
+													fontSize: "12px",
+													marginBottom: "4px",
+												}}
+											>
+												Total
+											</p>
+											<p
+												style={{
+													color: "#FFF",
+													fontSize: "18px",
+													fontWeight: 600,
+												}}
+											>
+												{validatedRows.length}
+											</p>
+										</div>
+										<div
+											style={{
+												flex: 1,
+												padding: "16px",
+												background: "#1F1F23",
+												borderRadius: "8px",
+											}}
+										>
+											<p
+												style={{
+													color: "var(--text-muted)",
+													fontSize: "12px",
+													marginBottom: "4px",
+												}}
+											>
+												Válidos
+											</p>
+											<p
+												style={{
+													color: "#22C55E",
+													fontSize: "18px",
+													fontWeight: 600,
+												}}
+											>
+												{
+													validatedRows.filter(
+														(r) => !r.ignored && r.errors.length === 0,
+													).length
+												}
+											</p>
+										</div>
+										<div
+											style={{
+												flex: 1,
+												padding: "16px",
+												background: "#1F1F23",
+												borderRadius: "8px",
+											}}
+										>
+											<p
+												style={{
+													color: "var(--text-muted)",
+													fontSize: "12px",
+													marginBottom: "4px",
+												}}
+											>
+												Com erros
+											</p>
+											<p
+												style={{
+													color: "#EF4444",
+													fontSize: "18px",
+													fontWeight: 600,
+												}}
+											>
+												{
+													validatedRows.filter((r) => r.errors.length > 0)
+														.length
+												}
+											</p>
+										</div>
+									</div>
+
+									<div
+										style={{
+											maxHeight: "300px",
+											overflow: "auto",
+											border: "1px solid var(--border)",
+											borderRadius: "8px",
+										}}
+									>
+										<table
+											style={{
+												width: "100%",
+												borderCollapse: "collapse",
+												fontSize: "13px",
+											}}
+										>
+											<thead>
+												<tr style={{ background: "#1F1F23" }}>
+													<th
+														style={{
+															padding: "12px",
+															textAlign: "left",
+															color: "var(--text-muted)",
+														}}
+													></th>
+													<th
+														style={{
+															padding: "12px",
+															textAlign: "left",
+															color: "var(--text-muted)",
+														}}
+													>
+														Data
+													</th>
+													<th
+														style={{
+															padding: "12px",
+															textAlign: "left",
+															color: "var(--text-muted)",
+														}}
+													>
+														Título
+													</th>
+													<th
+														style={{
+															padding: "12px",
+															textAlign: "right",
+															color: "var(--text-muted)",
+														}}
+													>
+														Valor
+													</th>
+													<th
+														style={{
+															padding: "12px",
+															textAlign: "left",
+															color: "var(--text-muted)",
+														}}
+													>
+														Status
+													</th>
+												</tr>
+											</thead>
+											<tbody>
+												{validatedRows.slice(0, 50).map((row, idx) => (
+													<tr
+														key={idx}
+														style={{
+															borderTop: "1px solid var(--border)",
+															opacity: row.ignored ? 0.5 : 1,
+														}}
+													>
+														<td style={{ padding: "8px" }}>
+															<input
+																type="checkbox"
+																checked={!row.ignored}
+																onChange={() => toggleRowIgnored(idx)}
+															/>
+														</td>
+														<td style={{ padding: "8px", color: "#FFF" }}>
+															{row.data}
+														</td>
+														<td style={{ padding: "8px", color: "#FFF" }}>
+															{row.titulo}
+														</td>
+														<td
+															style={{
+																padding: "8px",
+																textAlign: "right",
+																color:
+																	row.tipo === "receita"
+																		? "#22C55E"
+																		: "#EF4444",
+																fontFamily: "monospace",
+															}}
+														>
+															{row.tipo === "receita" ? "+" : "-"}
+															{row.valorStr}
+														</td>
+														<td style={{ padding: "8px" }}>
+															{row.errors.length > 0 ? (
+																<span
+																	style={{ color: "#EF4444", fontSize: "12px" }}
+																>
+																	{row.errors[0]}
+																</span>
+															) : (
+																<span
+																	style={{ color: "#22C55E", fontSize: "12px" }}
+																>
+																	OK
+																</span>
+															)}
+														</td>
+													</tr>
+												))}
+											</tbody>
+										</table>
+									</div>
+									{validatedRows.length > 50 && (
+										<p
+											style={{
+												color: "var(--text-muted)",
+												fontSize: "12px",
+												marginTop: "8px",
+												textAlign: "center",
+											}}
+										>
+											Mostrando 50 de {validatedRows.length} registros
+										</p>
+									)}
+								</div>
+							)}
+						</div>
+
+						<div
+							style={{
+								padding: "24px 28px",
+								background: "#111113",
+								borderTop: "1px solid var(--border)",
+								display: "flex",
+								justifyContent: "space-between",
+							}}
+						>
+							{importStep > 1 && (
+								<Button
+									variant="ghost"
+									onClick={() => setImportStep(importStep - 1)}
+								>
+									Voltar
+								</Button>
+							)}
+							<div style={{ marginLeft: "auto", display: "flex", gap: "12px" }}>
+								<Button variant="ghost" onClick={closeImportModal}>
+									Cancelar
+								</Button>
+								{importStep === 3 && (
+									<Button
+										variant="primary"
+										onClick={executeImport}
+										style={{ background: "#22C55E", color: "#FFF" }}
+									>
+										Importar{" "}
+										{
+											validatedRows.filter(
+												(r) => !r.ignored && r.errors.length === 0,
+											).length
+										}{" "}
+										registros
+									</Button>
+								)}
+							</div>
 						</div>
 					</div>
 				</div>

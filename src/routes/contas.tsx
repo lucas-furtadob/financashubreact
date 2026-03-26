@@ -534,6 +534,7 @@ function ContasPage() {
 								display: "flex",
 								justifyContent: "space-between",
 								alignItems: "flex-start",
+								borderBottom: "1px solid var(--border)",
 							}}
 						>
 							<div>
@@ -714,28 +715,75 @@ function ContasPage() {
 									>
 										Banco
 									</label>
-									<select
-										id="banco-conta"
+									<Select.Select
 										value={banco}
-										onChange={(e) => setBanco(e.target.value)}
-										style={{
-											width: "100%",
-											background: "#0A0A0B",
-											border: "1px solid var(--border)",
-											borderRadius: "12px",
-											height: "52px",
-											color: "#FFF",
-											padding: "0 16px",
-											fontSize: "15px",
-											cursor: "pointer",
-										}}
+										onValueChange={(value) => setBanco(value)}
 									>
-										<option value="">Selecione...</option>
-										<option value="Nubank">Nubank</option>
-										<option value="Banco do Brasil">Banco do Brasil</option>
-										<option value="Itaú">Itaú</option>
-										<option value="Caixa">Caixa Econômica</option>
-									</select>
+										<Select.SelectTrigger
+											style={{
+												width: "100%",
+												background: "#0A0A0B",
+												border: "1px solid var(--border)",
+												borderRadius: "12px",
+												height: "52px",
+												color: "#FFF",
+												fontSize: "15px",
+												outline: "none",
+												display: "flex",
+												alignItems: "center",
+											}}
+										>
+											<Select.SelectValue placeholder="Selecione..." />
+										</Select.SelectTrigger>
+										<Select.SelectContent
+											style={{
+												background: "var(--bg-card)",
+												border: "1px solid var(--border)",
+												borderRadius: "12px",
+											}}
+										>
+											<Select.SelectItem
+												value="Nubank"
+												style={{
+													color: "#FFF",
+													padding: "10px 12px",
+													borderRadius: "8px",
+												}}
+											>
+												Nubank
+											</Select.SelectItem>
+											<Select.SelectItem
+												value="Banco do Brasil"
+												style={{
+													color: "#FFF",
+													padding: "10px 12px",
+													borderRadius: "8px",
+												}}
+											>
+												Banco do Brasil
+											</Select.SelectItem>
+											<Select.SelectItem
+												value="Itaú"
+												style={{
+													color: "#FFF",
+													padding: "10px 12px",
+													borderRadius: "8px",
+												}}
+											>
+												Itaú
+											</Select.SelectItem>
+											<Select.SelectItem
+												value="Caixa"
+												style={{
+													color: "#FFF",
+													padding: "10px 12px",
+													borderRadius: "8px",
+												}}
+											>
+												Caixa Econômica
+											</Select.SelectItem>
+										</Select.SelectContent>
+									</Select.Select>
 								</div>
 							</div>
 							<div style={{ marginBottom: "20px" }}>
