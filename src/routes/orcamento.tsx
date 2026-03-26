@@ -2,6 +2,14 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { ActionButton } from "@/components/ds/ActionMenu";
 import { PageActions } from "@/components/ds/PageActions";
+import {
+	Table,
+	TableBody,
+	TableCell,
+	TableHead,
+	TableHeader,
+	TableRow,
+} from "@/components/ds/Table";
 import { MonthSelector } from "@/components/layout/MonthSelector";
 import * as Select from "@/components/ui/select";
 import { CATEGORIAS, getCategoriasDespesas } from "@/lib/categorias";
